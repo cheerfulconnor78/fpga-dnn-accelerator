@@ -1,10 +1,10 @@
 module tb_systolic;
     logic clk;
     logic rst;
-    #define SIZE 8
-    #define DATA_WIDTH 8
-    #define RESULT_WIDTH 32
-    #define NUMCYCLES 15 //data width*2-1
+    localparam SIZE = 8;
+    localparam DATA_WIDTH = 8;
+    localparam RESULT_WIDTH = 32;
+    localparam NUMCYCLES = 15; //data width*2-1
     //5 unit period clock
     always #5 clk = ~clk;
 
@@ -27,8 +27,11 @@ module tb_systolic;
         .row_weights(tb_row_weights),
         .col_activations(tb_col_activations),
         .result(res)
-    )
+    );
     
+
+    int error_count = 0;
+    int cycle;
     initial begin
     $display("start");
     clk = 0;
@@ -61,7 +64,7 @@ module tb_systolic;
 
     for(int i = 0; i < SIZE; i++) begin
         for(int j = 0; j < SIZE; j++) begin
-            int cycle = i + j;
+            cycle = i + j;
             feed_A[i][cycle] = test_A[i][j];
             feed_X[j][cycle] = test_X[i][j];
         end
@@ -89,7 +92,7 @@ module tb_systolic;
     $display("feed finished");
     repeat (SIZE * 3) @(posedge clk);
     
-    int error_count = 0;
+
     for(int i = 0; i < SIZE; i++) begin
         for(int j = 0; j < SIZE; j++) begin
             if(res[i][j] != test_corr[i][j])begin
@@ -103,4 +106,5 @@ module tb_systolic;
     if (error_count == 0) $display("--- TEST PASSED ---");
     else $display("--- TEST FAILED: %d errors ---", error_count);
     $finish;
+    end
 endmodule

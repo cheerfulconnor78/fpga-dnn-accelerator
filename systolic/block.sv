@@ -2,9 +2,9 @@
 module block (
     input logic[7:0] in_north,
     input logic[7:0] in_west,
-    input logic clk, rst
-    output logic[7:0] out_south
-    output logic[7:0] out_east
+    input logic clk, rst,
+    output logic[7:0] out_south,
+    output logic[7:0] out_east,
     output logic[31:0] result
 );
 
