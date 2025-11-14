@@ -1,29 +1,3 @@
-module tb_rand_systolic;
-localparam SIZE = 8;    
-localparam DATA_WIDTH = 8;
-localparam RESULT_WIDTH = 32;
-localparam NUMCYCLES = 15;
-
-logic clk;
-logic rst;
-
-
-logic [DATA_WIDTH-1:0] tb_row_weights[SIZE-1:0];
-logic [DATA_WIDTH-1:0] tb_col_activations[SIZE-1:0];
-logic [RESULT_WIDTH-1:0] res[SIZE-1:0][SIZE-1:0];
-
-logic [DATA_WIDTH-1:0] feed_A [DATA_WIDTH-1:0][NUMCYCLES-1:0]; //8 ports 15 cycles
-logic [DATA_WIDTH-1:0] feed_X [DATA_WIDTH-1:0][NUMCYCLES-1:0];
-    
-    
-systolic DUT(
-    .clk(clk),
-    .rst(rst),
-    .row_weights(tb_row_weights),
-    .col_activations(tb_col_activations),
-    .result(res)
-)
-
 class Matrix;
 
     rand logic [DATA_WIDTH-1:0] A[SIZE-1:0][SIZE-1:0];
@@ -52,6 +26,37 @@ class Matrix;
         end
     endfunction
 endclass
+
+module tb_rand_systolic;
+localparam SIZE = 8;    
+localparam DATA_WIDTH = 8;
+localparam RESULT_WIDTH = 32;
+localparam NUMCYCLES = 15;
+
+logic clk;
+logic rst;
+
+
+logic [DATA_WIDTH-1:0] tb_row_weights[SIZE-1:0];
+logic [DATA_WIDTH-1:0] tb_col_activations[SIZE-1:0];
+logic [RESULT_WIDTH-1:0] res[SIZE-1:0][SIZE-1:0];
+
+logic [DATA_WIDTH-1:0] feed_A [DATA_WIDTH-1:0][NUMCYCLES-1:0]; //8 ports 15 cycles
+logic [DATA_WIDTH-1:0] feed_X [DATA_WIDTH-1:0][NUMCYCLES-1:0];
+    
+    
+systolic DUT(
+    .clk(clk),
+    .rst(rst),
+    .row_weights(tb_row_weights),
+    .col_activations(tb_col_activations),
+    .result(res)
+);
+
+
+
+int cycle;
+int error_count;
 
 initial begin
     Matrix mat;
@@ -94,7 +99,7 @@ task run_test(input Matrix t);
 
     for(int i = 0; i < SIZE; i++) begin
         for(int j = 0; j < SIZE; j++) begin
-            int cycle = i + j;
+            cycle = i + j;
             feed_A[i][cycle] = t.A[i][j];
             feed_X[j][cycle] = t.X[i][j];
         end
@@ -122,7 +127,6 @@ task run_test(input Matrix t);
     $display("feed finished");
     repeat (SIZE * 3) @(posedge clk);
     
-    int error_count = 0;
     for(int i = 0; i < SIZE; i++) begin
         for(int j = 0; j < SIZE; j++) begin
             if(res[i][j] != t.expected[i][j])begin
@@ -138,7 +142,7 @@ task run_test(input Matrix t);
 
     //cleanup
     rst = 1;
-    #20
+    #20;
 endtask
 
 endmodule
