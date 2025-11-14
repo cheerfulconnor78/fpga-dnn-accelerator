@@ -1,3 +1,11 @@
+
+
+module tb_rand_systolic;
+localparam SIZE = 8;    
+localparam DATA_WIDTH = 8;
+localparam RESULT_WIDTH = 32;
+localparam NUMCYCLES = 15;
+
 class Matrix;
 
     rand logic [DATA_WIDTH-1:0] A[SIZE-1:0][SIZE-1:0];
@@ -26,12 +34,6 @@ class Matrix;
         end
     endfunction
 endclass
-
-module tb_rand_systolic;
-localparam SIZE = 8;    
-localparam DATA_WIDTH = 8;
-localparam RESULT_WIDTH = 32;
-localparam NUMCYCLES = 15;
 
 logic clk;
 logic rst;
