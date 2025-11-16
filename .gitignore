@@ -1,0 +1,20 @@
+# ModelSim/QuestaSim
+work/
+transcript
+*.cr.mti
+*.mpf
+*.vcd
+*.wlf
+
+# Intel Quartus
+db/
+output_files/
+incremental_db/
+*.qdb
+*.qpg
+*.qtl
+*.jdi
+*.sof
+*.pof
+*.summary
+*.log
