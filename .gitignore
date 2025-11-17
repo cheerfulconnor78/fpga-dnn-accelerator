@@ -18,3 +18,19 @@ incremental_db/
 *.pof
 *.summary
 *.log
+
+
+# Synopsys VCS
+csrc/
+simv/
+simv
+simv.daidir/
+simv.vdb/
+ucli.key
+vc_hdrs.h
+*.vpd
+*.fsdb
+verdiLog/
+inter.fsdb/
+novas.*
+

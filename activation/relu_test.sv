@@ -37,8 +37,8 @@ module relu_test; // Added a module name for clarity
 
         repeat (20) begin
             mat = new();
-            if(!mat.randomize()) begin [cite: 9]
-                $fatal("error!"); [cite: 10]
+            if(!mat.randomize()) begin
+                $fatal("error!");
             end
             mat.correct();
             run_test(mat);
@@ -47,7 +47,7 @@ module relu_test; // Added a module name for clarity
         $finish;
     end
 
-    always #5 clk = ~clk; [cite: 11]
+    always #5 clk = ~clk;
 
     task run_test(input Matrix t);
         bit error_found = 0;
