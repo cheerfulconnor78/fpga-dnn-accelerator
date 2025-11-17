@@ -10,7 +10,7 @@ module relu_array (
                 relu(
                     .weight_in(weights_in[i][j]),
                     .weight_out(weights_out[i][j])
-                )
+                );  
             end
         end 
     endgenerate

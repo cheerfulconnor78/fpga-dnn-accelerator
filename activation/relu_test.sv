@@ -23,12 +23,12 @@ module relu_test; // Added a module name for clarity
     endclass
 
     logic clk, rst;
-    logic[31:0] input[7:0][7:0];
-    logic[31:0] output[7:0][7:0];
+    logic[31:0] inputs[7:0][7:0];
+    logic[31:0] outputs[7:0][7:0];
 
     relu_array DUT(
-        .weights_in(input),
-        .weights_out(output)
+        .weights_in(inputs),
+        .weights_out(outputs)
     );
 
     initial begin
@@ -54,7 +54,7 @@ module relu_test; // Added a module name for clarity
         $display("Running new test...");
 
         // 1. Drive the randomized values to the DUT's input
-        input = t.weights;
+        inputs = t.weights;
 
         // 2. Wait for the combinational logic to propagate.
         // #1 is sufficient since the DUT is purely combinational.
@@ -63,11 +63,11 @@ module relu_test; // Added a module name for clarity
         // 3. Check every output element against the expected value
         for(int i = 0; i < SIZE; i++) begin
             for(int j = 0; j < SIZE; j++) begin
-                if (output[i][j] !== t.expected[i][j]) begin
+                if (outputs[i][j] !== t.expected[i][j]) begin
                     $display("  [FAIL] MISMATCH! @ index [%0d][%0d]", i, j);
                     $display("    Input:    %h (%d)", t.weights[i][j], t.weights[i][j]);
                     $display("    Expected: %h (%d)", t.expected[i][j], t.expected[i][j]);
-                    $display("    Got:      %h (%d)", output[i][j], output[i][j]);
+                    $display("    Got:      %h (%d)", outputs[i][j], outputs[i][j]);
                     error_found = 1;
                 end
             end
