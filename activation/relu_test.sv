@@ -1,4 +1,5 @@
 // constrained randomized test for relu array module itself
+`timescale 1ns/1ps
 module relu_test; // Added a module name for clarity
     localparam SIZE = 8;
 

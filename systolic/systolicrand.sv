@@ -57,7 +57,7 @@ systolic DUT(
 
 
 
-int cycle;
+int cycle;  
 int error_count;
 
 initial begin
@@ -76,7 +76,7 @@ initial begin
         mat = new();
         if (!mat.randomize())begin
             $fatal("transaction randomization failed");
-        end
+        end 
         mat.correct();
         run_test(mat);
     end
