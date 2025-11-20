@@ -38,7 +38,7 @@ module conv_test;
         endfunction
     endclass
 
-    logic clk, rst;
+    logic clk, rst, start;
     logic done; // Connects to all_done
     
     logic signed [7:0]  features[31:0][31:0];
@@ -49,6 +49,7 @@ module conv_test;
     conv_control DUT(
         .clk(clk),
         .rst(rst),
+        .start(start),
         .feature(features), 
         .weights(weights),
         .outputs(outputs),
@@ -97,6 +98,7 @@ module conv_test;
         // 2. Release Reset to Start DUT
         // DUT state goes INIT -> PROCESSING immediately on rst low
         rst = 0; 
+        start = 1;
 
         // 3. Wait for 'done'   
         fork

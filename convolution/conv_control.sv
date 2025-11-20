@@ -2,7 +2,7 @@
 module conv_control #(
     parameter MAPSIZE = 32
 ) (
-    input clk, rst,
+    input logic clk, rst, start,
     input logic signed [7:0] feature [MAPSIZE-1:0][MAPSIZE-1:0],
     input logic signed [7:0] weights [4:0][4:0],
     output logic signed [31:0] outputs [MAPSIZE-5:0][MAPSIZE-5:0],
@@ -17,9 +17,11 @@ module conv_control #(
     logic start_conv, conv_done;
     logic [traversal_bits-1:0] x_traversal;
     logic [traversal_bits-1:0] y_traversal;
-    assign all_done = (y_traversal == LIMIT) && (x_traversal == LIMIT);
+    logic last_pixel_reached;
+    assign last_pixel_reached = (y_traversal == LIMIT) && (x_traversal == LIMIT);
+    assign all_done = (state == DONE);
 
-    typedef enum { INIT, PROCESSING, UPDATING, DONE } state_t;
+    typedef enum { IDLE, PROCESSING, UPDATING, DONE } state_t;
     state_t state, nextstate;
 
     conv window (
@@ -47,10 +49,14 @@ module conv_control #(
             end
         end
         case (state)
-            INIT: begin
+            IDLE: begin
                 //initialize window as the top left corner of the feed
-                start_conv = 1;
-                nextstate = PROCESSING;
+                if(start) begin 
+                    start_conv = 1;
+                    nextstate = PROCESSING;
+                end else begin
+                    nextstate = IDLE;
+                end
             end
             PROCESSING: begin
                 if(conv_done) begin //done with 1 cycle
@@ -61,7 +67,7 @@ module conv_control #(
                 end
             end
             UPDATING: begin //writing stage
-                if(!all_done) begin
+                if(!last_pixel_reached) begin
                     nextstate = PROCESSING;
                 end else begin
                     nextstate = DONE;   
@@ -74,8 +80,12 @@ module conv_control #(
     end
 
     always_ff @(posedge clk) begin
+        if (state == IDLE) begin
+            x_traversal <= 0;
+            y_traversal <= 0;
+        end
         if(rst) begin
-            state <= INIT;
+            state <= IDLE;
             x_traversal <= '0;
             y_traversal <= '0;
         end else begin
