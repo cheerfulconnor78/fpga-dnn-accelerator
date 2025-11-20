@@ -19,11 +19,11 @@ module conv_control #(
     logic [traversal_bits-1:0] y_traversal;
     logic last_pixel_reached;
     assign last_pixel_reached = (y_traversal == LIMIT) && (x_traversal == LIMIT);
-    assign all_done = (state == DONE);
+
 
     typedef enum { IDLE, PROCESSING, UPDATING, DONE } state_t;
     state_t state, nextstate;
-
+    assign all_done = (state == DONE);
     conv window (
         .clk(clk),
         .rst(rst),
