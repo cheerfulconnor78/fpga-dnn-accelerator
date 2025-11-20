@@ -59,7 +59,8 @@ module conv_engine #(
     );
 
     // 3. Control Logic
-    typedef enum { IDLE, STREAMING, DONE } state_t;
+    // Added FLUSH state to drain the pipeline
+    typedef enum { IDLE, STREAMING, FLUSH, DONE } state_t;
     state_t state;
 
     // "Fast" condition check based on input counters
@@ -75,6 +76,35 @@ module conv_engine #(
             all_done <= 0;
             valid_pipe <= 0;
         end else begin
+            
+            // --- A. GLOBAL PIPELINE MANAGEMENT ---
+            // This runs during STREAMING AND FLUSH.
+            // It ensures the last few "valid" signals travel to the output
+            // even after the input data stops.
+            if (state == STREAMING || state == FLUSH) begin
+                // Shift the pipe:
+                // If Streaming + Valid Data: Shift in the condition.
+                // If Flushing: Shift in '0' to clear the pipe.
+                if (state == STREAMING && data_valid_in) 
+                    valid_pipe[0] <= condition_met;
+                else 
+                    valid_pipe[0] <= 0;
+                
+                valid_pipe[1] <= valid_pipe[0];
+
+                // Drive Output from the end of the pipe
+                mem_wr_en <= valid_pipe[1];
+                
+                if (valid_pipe[1]) begin
+                    mem_wr_data <= math_result; 
+                    mem_wr_addr <= write_ctr;
+                    write_ctr   <= write_ctr + 1;
+                end
+            end else begin
+                mem_wr_en <= 0;
+            end
+
+            // --- B. STATE MACHINE ---
             case (state)
                 IDLE: begin
                     all_done <= 0;
@@ -82,14 +112,12 @@ module conv_engine #(
                     col_ctr <= 0;
                     write_ctr <= 0;
                     valid_pipe <= 0;
-                    mem_wr_en <= 0;
                     if (start) state <= STREAMING;
                 end
 
                 STREAMING: begin
                     if (data_valid_in) begin
-                        // --- A. INPUT COUNTERS ---
-                        // Track where we are in the input stream
+                        // Increment Counters
                         pixel_ctr <= pixel_ctr + 1;
                         
                         if (col_ctr == MAPSIZE - 1) 
@@ -97,35 +125,25 @@ module conv_engine #(
                         else 
                             col_ctr <= col_ctr + 1;
 
-                        // --- B. PIPELINE MANAGEMENT (The Fix) ---
-                        // Shift the valid signal to match the latency of row_buffer + math_unit
-                        valid_pipe[0] <= condition_met;
-                        valid_pipe[1] <= valid_pipe[0];
-
-                        // --- C. OUTPUT GENERATION ---
-                        // Use the delayed signal to drive the write
-                        mem_wr_en <= valid_pipe[1];
-                        
-                        if (valid_pipe[1]) begin
-                            mem_wr_data <= math_result; 
-                            mem_wr_addr <= write_ctr;
-                            write_ctr   <= write_ctr + 1;
-                        end
-
-                        // --- D. EXIT CONDITION ---
+                        // Exit Condition:
+                        // When we hit the last pixel, we are NOT done yet.
+                        // We must go to FLUSH to let the pipeline drain.
                         if (pixel_ctr == TOTAL_PIXELS - 1) begin
-                            state <= DONE;
-                            mem_wr_en <= 0; 
+                            state <= FLUSH;
                         end
-                    end else begin
-                        // Pause writing if input pauses
-                        mem_wr_en <= 0; 
+                    end
+                end
+                
+                FLUSH: begin
+                    // Wait here until the pipeline empties out.
+                    // When valid_pipe is all zeros, the last writes are finished.
+                    if (valid_pipe == 0) begin
+                        state <= DONE;
                     end
                 end
 
                 DONE: begin
                     all_done <= 1;
-                    mem_wr_en <= 0;
                     state <= IDLE;
                 end
             endcase
