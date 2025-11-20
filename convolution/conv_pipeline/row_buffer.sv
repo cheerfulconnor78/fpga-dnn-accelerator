@@ -54,7 +54,7 @@ module row_buffer #(
                 window[r][1] <= window[r][2];
                 window[r][2] <= window[r][3];
                 window[r][3] <= window[r][4];
-                window[r][4] <= taps[r]; 
+                window[r][4] <= taps[4-r]; 
             end
         end
     end
