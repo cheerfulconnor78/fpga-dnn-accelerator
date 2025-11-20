@@ -5,8 +5,8 @@ module conv_control #(
     input clk, rst,
     input logic signed [7:0] feature [MAPSIZE-1:0][MAPSIZE-1:0],
     input logic signed [7:0] weights [4:0][4:0],
-    output logic signed [31:0] outputs [MAPSIZE-5:0][MAPSIZE-5:0]
-    output wire all_done;
+    output logic signed [31:0] outputs [MAPSIZE-5:0][MAPSIZE-5:0],
+    output wire all_done
 );  
 
     localparam LIMIT = MAPSIZE - 5;
