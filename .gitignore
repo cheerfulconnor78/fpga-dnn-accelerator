@@ -18,7 +18,12 @@ incremental_db/
 *.pof
 *.summary
 *.log
-
+simulation/
+*pin_model_dump.txt
+*.rpt
+*.summary
+*.smsg
+*.qws
 
 # Synopsys VCS
 csrc/
