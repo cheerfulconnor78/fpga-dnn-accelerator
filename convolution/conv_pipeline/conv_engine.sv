@@ -36,7 +36,8 @@ module conv_engine #(
     logic [OUT_ADDR_W-1:0]  write_ctr; 
 
     // Delay pipeline for alignment
-    logic [1:0] valid_pipe; 
+    // Size 4: 1 cycle (Buffer) + 3 cycles (Math Pipeline)
+    logic [3:0] valid_pipe; 
     logic condition_met;
 
     // 1. Instantiate Buffer
@@ -59,7 +60,6 @@ module conv_engine #(
     );
 
     // 3. Control Logic
-    // Added FLUSH state to drain the pipeline
     typedef enum { IDLE, STREAMING, FLUSH, DONE } state_t;
     state_t state;
 
@@ -90,12 +90,15 @@ module conv_engine #(
                 else 
                     valid_pipe[0] <= 0;
                 
+                // Shift through 4 stages (Indices 0, 1, 2, 3)
                 valid_pipe[1] <= valid_pipe[0];
+                valid_pipe[2] <= valid_pipe[1];
+                valid_pipe[3] <= valid_pipe[2];
 
-                // Drive Output from the end of the pipe
-                mem_wr_en <= valid_pipe[1];
+                // Drive Output from the end of the pipe (Index 3)
+                mem_wr_en <= valid_pipe[3];
                 
-                if (valid_pipe[1]) begin
+                if (valid_pipe[3]) begin
                     mem_wr_data <= math_result; 
                     mem_wr_addr <= write_ctr;
                     write_ctr   <= write_ctr + 1;
