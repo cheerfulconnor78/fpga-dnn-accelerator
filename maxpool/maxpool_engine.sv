@@ -1,6 +1,6 @@
 module maxpool_engine #(
-    parameter MAP_WIDTH = 28
-    parameter OUT_DIM = MAP_WIDTH / 2;
+    parameter MAP_WIDTH = 28,
+    parameter OUT_DIM = MAP_WIDTH / 2
 ) (
     input  logic clk,
     input  logic rst, 
