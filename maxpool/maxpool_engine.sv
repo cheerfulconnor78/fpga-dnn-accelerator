@@ -67,11 +67,7 @@ module maxpool_engine #(
                 if (row_parity == 1'b1 && col_ptr[0] == 1'b1) begin
                     valid_out <= 1'b1;
                     pixel_out <= max_final;
-                    
-                    // --- DEBUG PRINT ---
-                    // This will show us EXACTLY why the hardware picked the wrong number
-                    $display("DEBUG: Out#%0d | Cand: %0d %0d %0d %0d | Picked: %0d", 
-                             out_count, v0, v1, v2, v3, max_final);
+                    out_count, v0, v1, v2, v3, max_final);
 
                 end else begin
                     valid_out <= 1'b0;
