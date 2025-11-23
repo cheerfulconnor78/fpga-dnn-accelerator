@@ -8,7 +8,6 @@ module maxpool_stream_tb;
     localparam TOTAL_OUTPUTS = OUTPUT_DIM * OUTPUT_DIM;
 
     // Signals
-
     logic clk, rst;
     logic valid_in;
     logic signed [7:0] pixel_in;
@@ -21,7 +20,7 @@ module maxpool_stream_tb;
     logic signed [7:0] source_image [INPUT_DIM-1:0][INPUT_DIM-1:0];
     logic signed [7:0] expected_out [OUTPUT_DIM-1:0][OUTPUT_DIM-1:0];
     
-    // Capture buffer (Linear because we push data as it arrives)
+    // Capture buffer
     logic signed [7:0] actual_out [TOTAL_OUTPUTS-1:0]; 
     int out_write_ptr;
 
@@ -34,19 +33,22 @@ module maxpool_stream_tb;
         .pixel_in(pixel_in),
         .valid_out(valid_out),
         .pixel_out(pixel_out),
-        .all_done(all_done) // <--- CONNECTED
+        .all_done(all_done)
     );
 
-    // clk gen
+    // Clock gen
     initial clk = 0;
     always #5 clk = ~clk;
     
-    // Function to find max of 4 values
+    // -----------------------------------------------------------
+    // FIX 1: Robust Signed Comparator
+    // Forces the TB to treat inputs as signed, matching the DUT logic.
+    // -----------------------------------------------------------
     function automatic signed [7:0] max4(input signed [7:0] a, b, c, d);
         logic signed [7:0] m1, m2;
-        m1 = (a > b) ? a : b;
-        m2 = (c > d) ? c : d;
-        return (m1 > m2) ? m1 : m2;
+        m1 = ($signed(a) > $signed(b)) ? a : b;
+        m2 = ($signed(c) > $signed(d)) ? c : d;
+        return ($signed(m1) > $signed(m2)) ? m1 : m2;
     endfunction
 
     // Randomize inputs and generate golden reference
@@ -84,6 +86,15 @@ module maxpool_stream_tb;
             @(posedge clk);
             valid_in = 1;
             pixel_in = source_image[i / INPUT_DIM][i % INPUT_DIM];
+            
+            // -----------------------------------------------------------
+            // FIX 2: Debug Tracing
+            // Verify the data for Output #1 (Row 0/1, Col 2/3) matches expectations
+            // Indices: (0,2)=2, (0,3)=3, (1,2)=30, (1,3)=31
+            // -----------------------------------------------------------
+            if (i == 2 || i == 3 || i == 30 || i == 31) begin
+                $display("TB SENDING [Index %0d]: %0d", i, pixel_in);
+            end
         end
 
         // Stop Input Stream
@@ -98,22 +109,23 @@ module maxpool_stream_tb;
                 $display("Hardware signaled DONE.");
             end
             begin
-                // Timeout failsafe: 500 clocks is plenty for a flush
+                // Timeout failsafe
                 repeat(500) @(posedge clk);
                 $display("ERROR: Timeout waiting for all_done!");
                 $stop;
             end
         join_any
-        disable fork; // Kill the timeout thread if done triggers
+        disable fork;
 
         @(posedge clk);
         
-        // verify results
+        // Verify results
         $display("DUT finished. Captured %0d samples.", out_write_ptr);
         check_results();
         $stop;
     end
 
+    // Capture Output
     always @(posedge clk) begin
         if (valid_out) begin
             actual_out[out_write_ptr] = pixel_out;
@@ -121,7 +133,7 @@ module maxpool_stream_tb;
         end
     end
 
-    // checker
+    // Checker
     task automatic check_results();
         int errors = 0;
         
@@ -136,6 +148,7 @@ module maxpool_stream_tb;
             for (int c=0; c<OUTPUT_DIM; c++) begin
                 int linear_addr = r * OUTPUT_DIM + c;
                 
+                // Explicit strict equality check
                 if (actual_out[linear_addr] !== expected_out[r][c]) begin
                     $display("ERROR at Output [%0d][%0d] (Linear %0d)", r, c, linear_addr);
                     $display("  Expected: %0d", expected_out[r][c]);
