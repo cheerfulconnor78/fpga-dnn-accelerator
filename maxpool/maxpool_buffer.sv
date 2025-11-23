@@ -22,12 +22,12 @@ module maxpool_buffer #(
         if (rst) begin
             // Reset Buffers
             for (int i=0; i<LENGTH; i++) begin
-                row_buf[i] <= 8'b0;
+                row_buf[i] <= 8'h80;
             end
             // Reset Window
             for (int r=0; r<2; r++)
                 for (int c=0; c<2; c++)
-                    window[r][c] <= 8'b0;
+                    window[r][c] <= 8'h80;
         end 
         else if (data_valid_in) begin
             // Shift Line Buffers, stride = 2
