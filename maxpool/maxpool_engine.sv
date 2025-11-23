@@ -33,8 +33,8 @@ module maxpool_engine #(
         max_val = (max_top > max_bot)           ? max_top     : max_bot;
     end
 
-    logic total_outputs = OUT_DIM * OUT_DIM;
-    logic out_count;
+    localparam total_outputs = OUT_DIM * OUT_DIM;
+    logic [$clog2(total_outputs):0] out_count;
 
     always_ff @(posedge clk) begin
         if (rst) begin
@@ -42,6 +42,8 @@ module maxpool_engine #(
             row_parity <= 0;
             valid_out <= 0;
             pixel_out <= 0;
+            out_count <= 0;
+            all_done <= 0;
         end else if (valid_in) begin
             // Update Counters
             if (col_ptr == MAP_WIDTH - 1) begin
