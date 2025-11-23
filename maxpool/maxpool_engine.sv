@@ -25,19 +25,29 @@ module maxpool_engine #(
 
     // Counters for Stride Control
     logic [$clog2(MAP_WIDTH)-1:0] col_ptr;
-    logic row_parity; // 0 = Even, 1 = Odd
+    logic row_parity; 
 
-    logic signed [7:0] max_top, max_bot, max_val;
-    
+    // --- ROBUST COMPARATOR LOGIC ---
+    // We define 4 explicit signed wires for the candidates.
+    // This forces the tool to treat them as signed numbers.
+    logic signed [7:0] v0, v1, v2, v3;
+    logic signed [7:0] max_top, max_bot, max_final;
+
     always_comb begin
-        // Explicitly compare as signed integers
-        max_top = ($signed(window[0][1]) > $signed(line_out)) ? window[0][1] : line_out;
-        max_bot = ($signed(window[1][1]) > $signed(pixel_in)) ? window[1][1] : pixel_in;
-        max_val = ($signed(max_top)      > $signed(max_bot))  ? max_top      : max_bot;
+        // 1. Assign the candidates to signed wires
+        v0 = window[0][1]; // Top Left (from register)
+        v1 = line_out;     // Top Right (from buffer wire)
+        v2 = window[1][1]; // Bot Left (from register)
+        v3 = pixel_in;     // Bot Right (from input)
+
+        // 2. Compare using the signed wires
+        max_top   = (v0 > v1) ? v0 : v1;
+        max_bot   = (v2 > v3) ? v2 : v3;
+        max_final = (max_top > max_bot) ? max_top : max_bot;
     end
 
-    localparam total_outputs = OUT_DIM * OUT_DIM;
-    logic [$clog2(total_outputs):0] out_count;
+    localparam TOTAL_OUTPUTS = OUT_DIM * OUT_DIM;
+    logic [$clog2(TOTAL_OUTPUTS):0] out_count;
 
     always_ff @(posedge clk) begin
         if (rst) begin
@@ -48,21 +58,19 @@ module maxpool_engine #(
             out_count <= 0;
             all_done <= 0;
         end else begin
+            
+            // --- BLOCK A: Input Stream Processing ---
             if (valid_in) begin
-                // Update Counters
                 if (col_ptr == MAP_WIDTH - 1) begin
                     col_ptr <= 0;
-                    row_parity <= ~row_parity; // toggle row parity
+                    row_parity <= ~row_parity; 
                 end else begin
                     col_ptr <= col_ptr + 1;
                 end
 
-                // Stride Check (Stride = 2)
-                // We want the window when we have collected pixels [0,1] on rows [0,1]
-                // This happens when col_ptr is 1 (the second pixel) and row_parity is 1 (the second row)
                 if (row_parity == 1'b1 && col_ptr[0] == 1'b1) begin
                     valid_out <= 1'b1;
-                    pixel_out <= max_val;
+                    pixel_out <= max_final; // Use the robust result
                 end else begin
                     valid_out <= 1'b0;
                 end
@@ -70,8 +78,9 @@ module maxpool_engine #(
                 valid_out <= 1'b0;
             end
 
+            // --- BLOCK B: Output Counter ---
             if (valid_out) begin
-                if(out_count == total_outputs - 1) begin
+                if(out_count == TOTAL_OUTPUTS - 1) begin
                     all_done <= 1;
                     out_count <= 0;
                 end else begin
