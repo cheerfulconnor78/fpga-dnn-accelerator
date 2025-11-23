@@ -30,9 +30,10 @@ module maxpool_engine #(
     logic signed [7:0] max_top, max_bot, max_val;
     
     always_comb begin
-        max_top = (window[0][1] > line_out) ? window[0][1] : line_out;
-        max_bot = (window[1][1] > pixel_in) ? window[1][1] : pixel_in;
-        max_val = (max_top > max_bot)           ? max_top     : max_bot;
+        // Explicitly compare as signed integers
+        max_top = ($signed(window[0][1]) > $signed(line_out)) ? window[0][1] : line_out;
+        max_bot = ($signed(window[1][1]) > $signed(pixel_in)) ? window[1][1] : pixel_in;
+        max_val = ($signed(max_top)      > $signed(max_bot))  ? max_top      : max_bot;
     end
 
     localparam total_outputs = OUT_DIM * OUT_DIM;
