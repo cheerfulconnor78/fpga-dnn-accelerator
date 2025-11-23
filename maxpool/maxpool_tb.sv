@@ -43,7 +43,7 @@ module maxpool_stream_tb;
     
     // Function to find max of 4 values
     function automatic signed [7:0] max4(input signed [7:0] a, b, c, d);
-        signed [7:0] m1, m2;
+        logic signed [7:0] m1, m2;
         m1 = (a > b) ? a : b;
         m2 = (c > d) ? c : d;
         return (m1 > m2) ? m1 : m2;
@@ -125,18 +125,17 @@ module maxpool_stream_tb;
     task automatic check_results();
         int errors = 0;
         
-        // Check 1: Did we get the right number of pixels?
+        // Check for # of pixels
         if (out_write_ptr != TOTAL_OUTPUTS) begin
             $display("ERROR: Count Mismatch. Expected %0d items, got %0d", TOTAL_OUTPUTS, out_write_ptr);
             errors++;
         end
 
-        // Check 2: Does every pixel match the golden model?
+        // Check for data match 
         for (int r=0; r<OUTPUT_DIM; r++) begin
             for (int c=0; c<OUTPUT_DIM; c++) begin
                 int linear_addr = r * OUTPUT_DIM + c;
                 
-                // Use !== for strict matching (catches X or Z states)
                 if (actual_out[linear_addr] !== expected_out[r][c]) begin
                     $display("ERROR at Output [%0d][%0d] (Linear %0d)", r, c, linear_addr);
                     $display("  Expected: %0d", expected_out[r][c]);
