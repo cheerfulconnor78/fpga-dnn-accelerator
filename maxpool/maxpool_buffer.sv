@@ -3,6 +3,7 @@ module maxpool_buffer #(
 ) (
     input logic clk, rst, data_valid_in,
     input logic signed [7:0] pixel_in,
+    output logic signed [7:0] line_out,
     output logic signed [7:0] window [1:0][1:0]
 );
 
@@ -14,6 +15,8 @@ module maxpool_buffer #(
 
     assign taps[0] = pixel_in;
     assign taps[1] = row_buf[LENGTH-1];
+
+    assign line_out = row_buf[LENGTH -1];
 
     always_ff @(posedge clk) begin
         if (rst) begin

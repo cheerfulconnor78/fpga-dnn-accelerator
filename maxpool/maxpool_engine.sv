@@ -13,10 +13,12 @@ module maxpool_engine #(
 );
 
     logic signed [7:0] window [1:0][1:0];
+    logic signed [7:0] line_out;
     
     maxpool_buffer #(.LENGTH(MAP_WIDTH)) u_buffer (
         .clk(clk), .rst(rst),
         .data_valid_in(valid_in),
+        .line_out(line_out),
         .pixel_in(pixel_in),
         .window(window)
     );
@@ -28,8 +30,8 @@ module maxpool_engine #(
     logic signed [7:0] max_top, max_bot, max_val;
     
     always_comb begin
-        max_top = (window[0][0] > window[0][1]) ? window[0][0] : window[0][1];
-        max_bot = (window[1][0] > window[1][1]) ? window[1][0] : window[1][1];
+        max_top = (window[0][1] > line_out) ? window[0][1] : line_out;
+        max_bot = (window[1][1] > pixel_in) ? window[1][1] : pixel_in;
         max_val = (max_top > max_bot)           ? max_top     : max_bot;
     end
 
@@ -44,34 +46,36 @@ module maxpool_engine #(
             pixel_out <= 0;
             out_count <= 0;
             all_done <= 0;
-        end else if (valid_in) begin
-            // Update Counters
-            if (col_ptr == MAP_WIDTH - 1) begin
-                col_ptr <= 0;
-                row_parity <= ~row_parity; // toggle row parity
-            end else begin
-                col_ptr <= col_ptr + 1;
-            end
+        end else begin
+            if (valid_in) begin
+                // Update Counters
+                if (col_ptr == MAP_WIDTH - 1) begin
+                    col_ptr <= 0;
+                    row_parity <= ~row_parity; // toggle row parity
+                end else begin
+                    col_ptr <= col_ptr + 1;
+                end
 
-            // Stride Check (Stride = 2)
-            // We want the window when we have collected pixels [0,1] on rows [0,1]
-            // This happens when col_ptr is 1 (the second pixel) and row_parity is 1 (the second row)
-            if (row_parity == 1'b1 && col_ptr[0] == 1'b1) begin
-                valid_out <= 1'b1;
-                pixel_out <= max_val;
+                // Stride Check (Stride = 2)
+                // We want the window when we have collected pixels [0,1] on rows [0,1]
+                // This happens when col_ptr is 1 (the second pixel) and row_parity is 1 (the second row)
+                if (row_parity == 1'b1 && col_ptr[0] == 1'b1) begin
+                    valid_out <= 1'b1;
+                    pixel_out <= max_val;
+                end else begin
+                    valid_out <= 1'b0;
+                end
             end else begin
                 valid_out <= 1'b0;
             end
-        end else begin
-            valid_out <= 1'b0;
-        end
 
-        if (valid_out) begin
-            if(out_count == total_outputs - 1) begin
-                all_done <= 1;
-                out_count <= 0;
-            end else begin
-                out_count <= out_count + 1;
+            if (valid_out) begin
+                if(out_count == total_outputs - 1) begin
+                    all_done <= 1;
+                    out_count <= 0;
+                end else begin
+                    out_count <= out_count + 1;
+                end
             end
         end
     end
