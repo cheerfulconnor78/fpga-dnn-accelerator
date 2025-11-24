@@ -61,13 +61,19 @@ set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_RO
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 set_location_assignment PIN_V11 -to clk
 set_location_assignment PIN_AH17 -to rst_n
-set_location_assignment PIN_AA24 -to led[1]
 set_location_assignment PIN_W15 -to led[0]
+set_location_assignment PIN_AA24 -to led[1]
+set_location_assignment PIN_V16 -to led[2]
+set_location_assignment PIN_V15 -to led[3]
+set_location_assignment PIN_AF26 -to led[4]
+set_location_assignment PIN_AE26 -to led[5]
+set_location_assignment PIN_Y16 -to led[6]
+set_location_assignment PIN_AA23 -to led[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[*]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to clk
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[1]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[0]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to rst_n
+set_global_assignment -name MIF_FILE image.mif
+set_global_assignment -name MIF_FILE golden_layer1.mif
 set_global_assignment -name SDC_FILE top/lenet.sdc
 set_global_assignment -name SYSTEMVERILOG_FILE top/fpga_top_layer1.sv
 set_global_assignment -name SYSTEMVERILOG_FILE convolution/conv_pipeline/row_buffer.sv

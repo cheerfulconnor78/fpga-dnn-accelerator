@@ -100,7 +100,7 @@ module conv_engine #(
                 // Drive Output from the end of the pipe (Index 3)
                 mem_wr_en <= valid_pipe[5];
                 
-                if (valid_pipe[3]) begin
+                if (valid_pipe[5]) begin
                     mem_wr_data <= math_result; 
                     mem_wr_addr <= write_ctr;
                     write_ctr   <= write_ctr + 1;
