@@ -73,7 +73,8 @@ module lenet_top_tb;
             '{ 0,  0, -1,  0,  0}
         };
     end
-
+    int write_ptr = 0;
+    int errors = 0;
     // ------------------------------------------------
     // 7. MAIN SIMULATION PROCESS
     // ------------------------------------------------
@@ -136,8 +137,7 @@ module lenet_top_tb;
     // ------------------------------------------------
     // 8. AUTOMATIC CHECKER
     // ------------------------------------------------
-    int write_ptr = 0;
-    int errors = 0;
+
 
     always @(posedge clk) begin
         if (data_valid_out) begin
