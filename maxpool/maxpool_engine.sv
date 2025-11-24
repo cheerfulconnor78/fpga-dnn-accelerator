@@ -34,6 +34,13 @@ module maxpool_engine #(
     end
 
     // -------------------------------------------------------------
+    // STRIDE CONTROL LOGIC
+    // -------------------------------------------------------------
+    logic [$clog2(MAP_WIDTH)-1:0] col_ptr;
+    logic row_parity; 
+    logic stride_trigger; // Internal wire
+
+    // -------------------------------------------------------------
     // PIPELINE STAGE 1: FIRST LEVEL COMPARISONS
     // -------------------------------------------------------------
     // We compare Top pair and Bottom pair, and store the winners.
@@ -76,12 +83,7 @@ module maxpool_engine #(
         end
     end
 
-    // -------------------------------------------------------------
-    // STRIDE CONTROL LOGIC
-    // -------------------------------------------------------------
-    logic [$clog2(MAP_WIDTH)-1:0] col_ptr;
-    logic row_parity; 
-    logic stride_trigger; // Internal wire
+
 
     // Calculate stride condition (Combinational or Registered check)
     always_comb begin
