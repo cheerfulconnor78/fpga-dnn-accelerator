@@ -41,7 +41,6 @@ module lenet_top_tb;
         .start(start),
         .data_valid_in(data_valid_in),
         .pixel_in(pixel_in),
-        .weights(weights),
         .data_valid_out(data_valid_out),
         .pixel_out(pixel_out),
         .layer_done(layer_done)

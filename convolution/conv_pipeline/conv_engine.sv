@@ -37,7 +37,7 @@ module conv_engine #(
 
     // Delay pipeline for alignment
     // Size 4: 1 cycle (Buffer) + 3 cycles (Math Pipeline)
-    logic [3:0] valid_pipe; 
+    logic [5:0] valid_pipe; 
     logic condition_met;
 
     // 1. Instantiate Buffer
@@ -94,9 +94,11 @@ module conv_engine #(
                 valid_pipe[1] <= valid_pipe[0];
                 valid_pipe[2] <= valid_pipe[1];
                 valid_pipe[3] <= valid_pipe[2];
+                valid_pipe[4] <= valid_pipe[3];
+                valid_pipe[5] <= valid_pipe[4];
 
                 // Drive Output from the end of the pipe (Index 3)
-                mem_wr_en <= valid_pipe[3];
+                mem_wr_en <= valid_pipe[5];
                 
                 if (valid_pipe[3]) begin
                     mem_wr_data <= math_result; 
