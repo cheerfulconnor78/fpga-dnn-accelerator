@@ -21,19 +21,23 @@ module fpga_top_layer1 (
     (* ramstyle = "logic", ram_init_file = "golden_layer1.mif" *) 
     logic signed [7:0] golden_rom [0:OUTPUT_COUNT-1];
 
-    // 3. STATE MACHINE & DATA FEEDER
+   // 3. STATE MACHINE (Modified for Loading Delay)
+    typedef enum { IDLE, WAIT_LOAD, RUN, DONE } state_t; // Added WAIT_LOAD
+    state_t state;
+    
+    // Counter to give the ROMs time to load (needs ~27 cycles, we give 60 for safety)
+    logic [5:0] startup_timer; 
+
+    // ADD THESE MISSING DECLARATIONS
+    logic start;
     logic data_valid_in;
     logic signed [7:0] pixel_in;
     logic [$clog2(TOTAL_PIXELS):0] read_ptr;
-    logic start;
     
-    // Outputs from DUT
+    // Outputs from the MUX (Single Channel)
     logic data_valid_out;
     logic signed [7:0] pixel_out;
     logic layer_done;
-
-    typedef enum { IDLE, RUN, DONE } state_t;
-    state_t state;
 
     always_ff @(posedge clk) begin
         if (rst) begin
@@ -42,23 +46,34 @@ module fpga_top_layer1 (
             data_valid_in <= 0;
             start <= 0;
             pixel_in <= 0;
+            startup_timer <= 0;
         end else begin
             case (state)
                 IDLE: begin
-                    start <= 1;
-                    state <= RUN;
+                    state <= WAIT_LOAD;
+                end
+
+                // NEW STATE: Wait for internal weight loading to finish
+                WAIT_LOAD: begin
+                    start <= 0;
+                    if (startup_timer == 60) begin
+                        start <= 1; // Pulse start to trigger the loaders
+                        state <= RUN;
+                    end else begin
+                        startup_timer <= startup_timer + 1;
+                    end
                 end
 
                 RUN: begin
-                    start <= 0;
+                    // (This logic remains exactly the same as your source lines 48-52)
                     if (read_ptr < TOTAL_PIXELS) begin
                         data_valid_in <= 1;
-                        // Direct Array Read (MIF sourced)
-                        pixel_in <= image_rom[read_ptr]; 
+                        pixel_in <= image_rom[read_ptr];
                         read_ptr <= read_ptr + 1;
                     end else begin
                         data_valid_in <= 0;
-                        if (layer_done) state <= DONE;
+                        // Check if ALL layers are done (using the array)
+                        if (layer_done) state <= DONE; 
                     end
                 end
 
@@ -69,13 +84,30 @@ module fpga_top_layer1 (
         end
     end
 
-    // 4. DUT INSTANTIATION
-    lenet_top DUT (
-        .clk(clk), .rst(rst), .start(start),
-        .data_valid_in(data_valid_in), .pixel_in(pixel_in),
-        .data_valid_out(data_valid_out), .pixel_out(pixel_out),
-        .layer_done(layer_done)
+    // 4. DUT INSTANTIATION (Modified for Parallel)
+    
+    // Intermediate wires for the 6 parallel channels
+    logic [5:0] all_valid_out;
+    logic [5:0][7:0] all_pixel_out;
+    logic [5:0] all_done;
+
+    lenet_top_parallel DUT (
+        .clk(clk), 
+        .rst(rst), 
+        .start(start),
+        .data_valid_in(data_valid_in), 
+        .pixel_in(pixel_in),
+        
+        // Connect the arrays
+        .data_valid_out(all_valid_out), 
+        .pixel_out(all_pixel_out),
+        .layer_done(all_done)
     );
+
+    // MUX: Route Channel 0 to your existing Verification Logic
+    assign data_valid_out = all_valid_out[0];
+    assign pixel_out      = all_pixel_out[0];
+    assign layer_done     = all_done[0];    // Only finish when Channel 0 finishes
 
     // 5. VERIFIER (Trap & Display)
     logic error_latched;
@@ -107,8 +139,7 @@ module fpga_top_layer1 (
             led[7]   = 1'b1; // Top bit ON = Error
             led[6:0] = debug_value[6:0]; // Show the calculated value
         end else begin
-            led = 8'h00; // Running
+            led = read_ptr[7:0];
         end
     end
-
 endmodule

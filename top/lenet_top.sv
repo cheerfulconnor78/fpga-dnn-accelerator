@@ -1,4 +1,5 @@
-module lenet_top (
+module lenet_channel #(parameter CHANNEL_ID = 0 // to distinguish top level channels
+)(
     input logic clk, rst, start,
     
     // external data stream
@@ -10,17 +11,56 @@ module lenet_top (
     output logic signed [7:0] pixel_out,
     output logic layer_done
 );
-    // 1. PARAMETERS & HARDCODED WEIGHTS
-    localparam MAPSIZE = 32;
-    localparam OUTPUT_SHIFT = 0;
 
-    logic signed [7:0] weights [4:0][4:0];
-    always_comb begin
-        weights[0][0] = 0;  weights[0][1] = 0;  weights[0][2] = -1; weights[0][3] = 0;  weights[0][4] = 0;
-        weights[1][0] = 0;  weights[1][1] = -1; weights[1][2] = -2; weights[1][3] = -1; weights[1][4] = 0;
-        weights[2][0] = -1; weights[2][1] = -2; weights[2][2] = 16; weights[2][3] = -2; weights[2][4] = -1;
-        weights[3][0] = 0;  weights[3][1] = -1; weights[3][2] = -2; weights[3][3] = -1; weights[3][4] = 0;
-        weights[4][0] = 0;  weights[4][1] = 0;  weights[4][2] = -1; weights[4][3] = 0;  weights[4][4] = 0;
+    localparam MAPSIZE = 32;     
+    localparam OUTPUT_SHIFT = 8;  //log2(weights max scale)
+    // 1. WEIGHT LOADING LOGIC
+    // ---------------------------------------------------------
+    logic signed [7:0] weights [4:0][4:0]; // The storage for the engine
+    // ROM Signals
+    logic [4:0] rom_addr;
+    logic signed [7:0] rom_data;
+    
+    // Instantiate your new ROM
+    layer1_weight_rom #(.CHANNEL_ID(CHANNEL_ID)) weight_mem (
+        .clk(clk),
+        .addr(rom_addr),
+        .weight_out(rom_data)
+    );
+
+    // Loader State Machine
+    // This runs once at reset to copy ROM -> Registers
+    logic [4:0] load_counter;
+    logic loading_done;
+
+    always_ff @(posedge clk) begin
+        if (rst) begin
+            load_counter <= 0;
+            loading_done <= 0;
+            rom_addr <= 0;
+            // Clear weights
+            for (int r=0; r<5; r++) 
+                for (int c=0; c<5; c++) 
+                    weights[r][c] <= 0;
+        end else begin
+            if (!loading_done) begin
+                // Pipeline delay: Address set in cycle N, Data ready in N+1
+                rom_addr <= load_counter + 1; 
+                
+                // Store the PREVIOUS cycle's requested data
+                // Map linear counter 0..24 to [row][col]
+                // (This assumes your HEX file is row-major: row0, then row1...)
+                if (load_counter > 0) begin
+                   weights[(load_counter-1)/5][(load_counter-1)%5] <= rom_data;
+                end
+
+                if (load_counter == 26) begin // 25 weights + latency
+                    loading_done <= 1;
+                end else begin
+                    load_counter <= load_counter + 1;
+                end
+            end
+        end
     end
 
     // 2. CONVOLUTION INSTANCE
@@ -32,7 +72,7 @@ module lenet_top (
     conv_engine #( .MAPSIZE(MAPSIZE) ) conv (
         .clk(clk),
         .rst(rst),
-        .start(start),
+        .start(start && loading_done),
         .data_valid_in(data_valid_in),
         .pixel_in(pixel_in),
         .weights(weights),

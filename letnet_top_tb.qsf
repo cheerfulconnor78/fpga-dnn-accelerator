@@ -72,6 +72,8 @@ set_location_assignment PIN_AA23 -to led[7]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[*]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to clk
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to rst_n
+set_global_assignment -name SYSTEMVERILOG_FILE top/layer1_weight_rom.sv
+set_global_assignment -name SYSTEMVERILOG_FILE top/lenet_top_parallel.sv
 set_global_assignment -name MIF_FILE image.mif
 set_global_assignment -name MIF_FILE golden_layer1.mif
 set_global_assignment -name SDC_FILE top/lenet.sdc
