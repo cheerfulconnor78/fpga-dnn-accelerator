@@ -6,7 +6,7 @@ module fpga_top_layer1 (
     // 1. SETTINGS
     localparam MAPSIZE = 32;
     localparam TOTAL_PIXELS = MAPSIZE * MAPSIZE; // 1024
-    localparam OUTPUT_COUNT = 14 * 14; // 196
+    localparam OUTPUT_COUNT = 5*5; // 25
 
     logic rst;
     assign rst = ~rst_n;
@@ -18,7 +18,7 @@ module fpga_top_layer1 (
     (* ramstyle = "logic", ram_init_file = "image.mif" *)   
     logic signed [7:0]  image_rom  [0:TOTAL_PIXELS-1];
 
-    (* ramstyle = "logic", ram_init_file = "golden_layer1.mif" *) 
+    (* ramstyle = "logic", ram_init_file = "golden_layer2.mif" *) 
     logic signed [7:0] golden_rom [0:OUTPUT_COUNT-1];
 
    // 3. STATE MACHINE (Modified for Loading Delay)
@@ -28,7 +28,6 @@ module fpga_top_layer1 (
     // Counter to give the ROMs time to load (needs ~27 cycles, we give 60 for safety)
     logic [5:0] startup_timer; 
 
-    // ADD THESE MISSING DECLARATIONS
     logic start;
     logic data_valid_in;
     logic signed [7:0] pixel_in;
@@ -86,10 +85,10 @@ module fpga_top_layer1 (
 
     // 4. DUT INSTANTIATION (Modified for Parallel)
     
-    // Intermediate wires for the 6 parallel channels
-    logic [5:0] all_valid_out;
-    logic [5:0][7:0] all_pixel_out;
-    logic [5:0] all_done;
+    // Intermediate wires for the 6 parallel channels of c1
+    logic [5:0] c1_valid_out;
+    logic [5:0][7:0] c1_pixel_out;
+    logic [5:0] c1_done;
 
     lenet_top_parallel DUT (
         .clk(clk), 
@@ -99,15 +98,44 @@ module fpga_top_layer1 (
         .pixel_in(pixel_in),
         
         // Connect the arrays
-        .data_valid_out(all_valid_out), 
-        .pixel_out(all_pixel_out),
-        .layer_done(all_done)
+        .data_valid_out(c1_valid_out), 
+        .pixel_out(c1_pixel_out),
+        .layer_done(c1_done)
     );
 
+    // --- INSTANTIATE LAYER 2 (16 Parallel Blocks) ---
+    logic [15:0]       c3_valid_out;
+    logic [15:0][7:0]  c3_pixel_out;
+    logic [15:0]       c3_done;
+
+    genvar i;
+    generate
+        for (i = 0; i < 16; i++) begin : layer2_instances
+            lenet_channel_layer2 #(
+                .CHANNEL_ID(i) // Loads weights_c2_0.hex, _1.hex, etc.
+            ) u_l2 (
+                .clk(clk),
+                .rst(rst),
+                
+                // Actually, just pass the 'start' signal. The data_valid lines handle the timing.
+                .start(start), 
+                
+                // CONNECT ALL 6 L1 OUTPUTS TO THIS L2 INSTANCE
+                .data_valid_in(c1_valid_out), 
+                .pixel_in(c1_pixel_out),
+                
+                // Output 1 stream per instance
+                .data_valid_out(c3_valid_out[i]),
+                .pixel_out(c3_pixel_out[i]),
+                .layer_done(c3_done[i])
+            );
+        end
+    endgenerate
+
     // MUX: Route Channel 0 to your existing Verification Logic
-    assign data_valid_out = all_valid_out[0];
-    assign pixel_out      = all_pixel_out[0];
-    assign layer_done     = all_done[0];    // Only finish when Channel 0 finishes
+    assign data_valid_out = c3_valid_out[0];
+    assign pixel_out      = c3_pixel_out[0];
+    assign layer_done     = c3_done[0];    // Only finish when Channel 0 finishes
 
     // 5. VERIFIER (Trap & Display)
     logic error_latched;

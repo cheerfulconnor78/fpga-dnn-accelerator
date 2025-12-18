@@ -1,3 +1,4 @@
+// C1 and S2
 module lenet_channel #(parameter CHANNEL_ID = 0 // to distinguish top level channels
 )(
     input logic clk, rst, start,
