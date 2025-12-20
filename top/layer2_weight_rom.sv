@@ -7,7 +7,7 @@ module layer2_weight_rom #(
 );
 
     // This forces Quartus to use M10K blocks or LUTRAM automatically
-    (* ramstyle = "logic" *) // or "M10K" if you prefer
+    (* ramstyle = "M10K" *) // or "M10K" if you prefer
     logic signed [7:0] mem [0:149]; //6 * 5 * 5
 
     // Initialize with different files based on ID

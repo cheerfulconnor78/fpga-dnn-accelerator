@@ -8,7 +8,7 @@ module layer1_weight_rom #(
 
     // This forces Quartus to use M10K blocks or LUTRAM automatically
     (* ramstyle = "logic" *) // or "M10K" if you prefer
-    logic signed [7:0] mem [0:24];
+    logic signed [7:0] mem [0:31];
 
     // Initialize with different files based on ID
     // Note: You must generate these .mif files (w_c1_0.mif, w_c1_1.mif, etc.)

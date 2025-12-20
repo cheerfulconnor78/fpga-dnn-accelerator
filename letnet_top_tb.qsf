@@ -72,6 +72,13 @@ set_location_assignment PIN_AA23 -to led[7]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[*]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to clk
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to rst_n
+set_global_assignment -name SYSTEMVERILOG_FILE top/layer2_rom_banked.sv
+set_global_assignment -name SYSTEMVERILOG_FILE top/fc_weight_rom.sv
+set_global_assignment -name HEX_FILE out_weights_flattened.hex
+set_global_assignment -name HEX_FILE f6_weights_flattened.hex
+set_global_assignment -name HEX_FILE c5_weights_flattened.hex
+set_global_assignment -name SYSTEMVERILOG_FILE top/output_max.sv
+set_global_assignment -name SYSTEMVERILOG_FILE top/fc_streaming.sv
 set_global_assignment -name MIF_FILE top/weights_generator/golden_layer2.mif
 set_global_assignment -name SYSTEMVERILOG_FILE top/lenet_top2.sv
 set_global_assignment -name SYSTEMVERILOG_FILE top/layer2_weight_rom.sv
@@ -88,4 +95,11 @@ set_global_assignment -name SYSTEMVERILOG_FILE maxpool/maxpool_buffer.sv
 set_global_assignment -name SYSTEMVERILOG_FILE maxpool/maxpool_engine.sv
 set_global_assignment -name SYSTEMVERILOG_FILE top/lenet_top.sv
 set_global_assignment -name SOURCE_FILE db/letnet_top_tb.cmp.rdb
+set_location_assignment PIN_W21 -to sw[2]
+set_location_assignment PIN_W24 -to sw[1]
+set_location_assignment PIN_Y24 -to sw[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sw[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sw[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sw[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sw
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

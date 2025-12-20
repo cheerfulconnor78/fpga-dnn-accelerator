@@ -4,27 +4,32 @@ module lenet_channel_layer2 #(parameter CHANNEL_ID = 0)(
     // External data stream
     input logic [5:0] data_valid_in,
     input logic signed [5:0][7:0] pixel_in,
+    input logic [3:0] weight_id,
 
     // Data out
     output logic data_valid_out,
     output logic signed [7:0] pixel_out,
-    output logic layer_done
+    output logic layer_done,
+    output logic loading_done
 );
     localparam MAPSIZE = 14;     
-    localparam OUTPUT_SHIFT = 8;  
+    localparam OUTPUT_SHIFT = 10;  
 
     // 1. WEIGHT STORAGE
     logic signed [7:0] weights [5:0][4:0][4:0]; 
     logic [7:0] rom_addr; 
     logic signed [7:0] rom_data;
     
-    layer2_weight_rom #(.CHANNEL_ID(CHANNEL_ID)) weight_mem (
-        .clk(clk), .addr(rom_addr), .weight_out(rom_data)
+    layer2_rom_banked weight_mem (
+        .clk(clk),
+        .bank_id(weight_id), // Pass the input here
+        .addr(rom_addr),
+        .weight_out(rom_data)
     );
 
    // 2. WEIGHT LOADING STATE MACHINE
     logic [7:0] load_counter; 
-    (* preserve *) logic loading_done;
+    (* preserve *) logic internal_loading_done;
     
     // Explicit counters for array indexing (Replaces / and %)
     logic [2:0] w_ch_cnt;
@@ -37,32 +42,33 @@ module lenet_channel_layer2 #(parameter CHANNEL_ID = 0)(
     always_ff @(posedge clk) begin
         if (rst) begin
             load_counter   <= 0;
-            loading_done   <= 0;
+            internal_loading_done   <= 0;
             rom_addr       <= 0;
             internal_start <= 0;
-            
-            // Reset counters
             w_ch_cnt       <= 0;
             w_row_cnt      <= 0;
             w_col_cnt      <= 0;
         end else begin
-            // Generate clean start signal for DSPs
-            internal_start <= (start && loading_done);
+            internal_start <= (start && internal_loading_done);
 
-            if (!loading_done) begin
+            if (!internal_loading_done) begin
+                // 1. REQUEST NEXT DATA
+                // We always ask for the NEXT address ahead of time
                 rom_addr <= load_counter + 1;
-                
-                // Load weights using explicit counters
-                if (load_counter > 0) begin
+
+                // 2. CAPTURE CURRENT DATA (from previous request)
+                // We only write when load_counter > 0 because of the 1-cycle RAM latency.
+                // Fix: Stop exactly after 150 writes to prevent overwrite
+                if (load_counter > 0 && load_counter <= 150) begin
                     weights[w_ch_cnt][w_row_cnt][w_col_cnt] <= rom_data;
                     
-                    // Increment 3D counters manually
+                    // Increment 3D Indices only when we actually write
                     if (w_col_cnt == 4) begin
                         w_col_cnt <= 0;
                         if (w_row_cnt == 4) begin
                             w_row_cnt <= 0;
                             if (w_ch_cnt == 5) begin
-                                w_ch_cnt <= 0; // Wrap around (shouldn't matter as loading ends)
+                                w_ch_cnt <= 0;
                             end else begin
                                 w_ch_cnt <= w_ch_cnt + 1;
                             end
@@ -74,17 +80,18 @@ module lenet_channel_layer2 #(parameter CHANNEL_ID = 0)(
                     end
                 end
 
-                // 6 channels * 5 * 5 = 150 weights. 
-                // load_counter starts at 0. rom_data valid at load_counter=1.
-                // We need 150 writes. 1 to 150.
+                // 3. STOP CONDITION
+                // 150 weights + 1 cycle for the pipeline to flush the last value
                 if (load_counter == 151) begin 
-                    loading_done <= 1;
+                    internal_loading_done <= 1;
                 end else begin
                     load_counter <= load_counter + 1;
                 end
             end
         end
     end
+
+    assign loading_done = internal_loading_done;
 
     // 3. CONVOLUTION ENGINES
     logic [5:0] internal_valid;
@@ -97,7 +104,7 @@ module lenet_channel_layer2 #(parameter CHANNEL_ID = 0)(
                 .clk(clk),
                 .rst(rst),
                 // USE THE PIPELINED SIGNAL HERE
-                .start(internal_start), 
+                .start(start), 
                 
                 .data_valid_in(data_valid_in[i]), 
                 .pixel_in(pixel_in[i]),           

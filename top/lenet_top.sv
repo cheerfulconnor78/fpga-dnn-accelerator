@@ -14,7 +14,7 @@ module lenet_channel #(parameter CHANNEL_ID = 0 // to distinguish top level chan
 );
 
     localparam MAPSIZE = 32;     
-    localparam OUTPUT_SHIFT = 8;  //log2(weights max scale)
+    localparam OUTPUT_SHIFT = 10;  //log2(weights max scale)
     // 1. WEIGHT LOADING LOGIC
     // ---------------------------------------------------------
     logic signed [7:0] weights [4:0][4:0]; // The storage for the engine
@@ -45,17 +45,21 @@ module lenet_channel #(parameter CHANNEL_ID = 0 // to distinguish top level chan
                     weights[r][c] <= 0;
         end else begin
             if (!loading_done) begin
-                // Pipeline delay: Address set in cycle N, Data ready in N+1
-                rom_addr <= load_counter + 1; 
-                
-                // Store the PREVIOUS cycle's requested data
-                // Map linear counter 0..24 to [row][col]
-                // (This assumes your HEX file is row-major: row0, then row1...)
+                // 1. PREFETCH ADDRESS (Like Layer 2)
+                rom_addr <= load_counter + 1;
+
+                // 2. DELAYED WRITE
+                // Only write when counter > 0 (Data is valid)
                 if (load_counter > 0) begin
-                   weights[(load_counter-1)/5][(load_counter-1)%5] <= rom_data;
+                    // We must subtract 1 from counter to get the correct index
+                    // because data arriving at cnt=1 belongs to cnt=0.
+                    if (load_counter <= 25) begin
+                       weights[(load_counter-1)/5][(load_counter-1)%5] <= rom_data;
+                    end
                 end
 
-                if (load_counter == 26) begin // 25 weights + latency
+                // 3. INCREMENT
+                if (load_counter == 26) begin 
                     loading_done <= 1;
                 end else begin
                     load_counter <= load_counter + 1;
@@ -73,7 +77,7 @@ module lenet_channel #(parameter CHANNEL_ID = 0 // to distinguish top level chan
     conv_engine #( .MAPSIZE(MAPSIZE) ) conv (
         .clk(clk),
         .rst(rst),
-        .start(start && loading_done),
+        .start(start ), 
         .data_valid_in(data_valid_in),
         .pixel_in(pixel_in),
         .weights(weights),
