@@ -1,0 +1,20 @@
+Fitter Status : Successful - Mon Dec 29 16:53:07 2025
+Quartus Prime Version : 24.1std.0 Build 1077 03/04/2025 SC Lite Edition
+Revision Name : DE10_NANO_SoC_GHRD
+Top-level Entity Name : DE10_NANO_SoC_GHRD
+Family : Cyclone V
+Device : 5CSEBA6U23I7
+Timing Models : Final
+Logic utilization (in ALMs) : 19,076 / 41,910 ( 46 % )
+Total registers : 22449
+Total pins : 172 / 314 ( 55 % )
+Total virtual pins : 0
+Total block memory bits : 59,616 / 5,662,720 ( 1 % )
+Total RAM Blocks : 17 / 553 ( 3 % )
+Total DSP Blocks : 112 / 112 ( 100 % )
+Total HSSI RX PCSs : 0
+Total HSSI PMA RX Deserializers : 0
+Total HSSI TX PCSs : 0
+Total HSSI PMA TX Serializers : 0
+Total PLLs : 0 / 6 ( 0 % )
+Total DLLs : 1 / 4 ( 25 % )
