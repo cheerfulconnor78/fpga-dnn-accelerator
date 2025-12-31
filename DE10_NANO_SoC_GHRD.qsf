@@ -580,4 +580,5 @@ set_global_assignment -name VERILOG_FILE ip/debounce/debounce.v
 set_global_assignment -name QIP_FILE ip/altsource_probe/hps_reset.qip
 set_global_assignment -name QIP_FILE soc_system/synthesis/soc_system.qip
 set_global_assignment -name SOURCE_FILE db/DE10_NANO_SoC_GHRD.cmp.rdb
+set_global_assignment -name SEED 5
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

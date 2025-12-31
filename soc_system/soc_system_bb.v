@@ -56,7 +56,6 @@ module soc_system (
 	hps_0_hps_io_hps_io_gpio_inst_GPIO53,
 	hps_0_hps_io_hps_io_gpio_inst_GPIO54,
 	hps_0_hps_io_hps_io_gpio_inst_GPIO61,
-	hps_ctrl_external_connection_export,
 	image_ram_out_address,
 	image_ram_out_chipselect,
 	image_ram_out_clken,
@@ -139,7 +138,6 @@ module soc_system (
 	inout		hps_0_hps_io_hps_io_gpio_inst_GPIO53;
 	inout		hps_0_hps_io_hps_io_gpio_inst_GPIO54;
 	inout		hps_0_hps_io_hps_io_gpio_inst_GPIO61;
-	output	[31:0]	hps_ctrl_external_connection_export;
 	input	[9:0]	image_ram_out_address;
 	input		image_ram_out_chipselect;
 	input		image_ram_out_clken;

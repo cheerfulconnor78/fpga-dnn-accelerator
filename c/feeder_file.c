@@ -4,22 +4,18 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <stdint.h>
-#include <string.h>
 
 #define HW_REGS_BASE (0xFF200000)
 #define HW_REGS_SPAN (0x00200000)
 #define RAM_OFFSET   (0x00040000)
-#define CTRL_OFFSET  (0x00050000)
+#define TOTAL_PIXELS 1024
+#define IMG_WIDTH    32
 
-void print_ascii(uint8_t grid[32][32], const char* label) {
-    printf("\n--- %s ---\n", label);
-    for (int r = 0; r < 32; r++) {
-        printf("%02d: ", r);
-        for (int c = 0; c < 32; c++) {
-            printf("%c ", (grid[r][c] > 0) ? '#' : '.');
-        }
-        printf("\n");
-    }
+// Helper to convert pixel intensity (0-127) to a character
+char pixel_to_ascii(uint32_t val) {
+    if (val < 25)  return '.';  // Background
+    if (val < 60)  return '+';  // Grey
+    return '#';                 // Ink
 }
 
 int main() {
@@ -27,92 +23,74 @@ int main() {
     FILE *hex_fp;
     void *virtual_base;
     volatile uint32_t *ram_ptr;
-    volatile uint32_t *ctrl_ptr;
     char line_buffer[16];
-
-    // 1. MAP MEMORY
-    if((fd = open("/dev/mem", (O_RDWR | O_SYNC))) == -1) return 1;
-    virtual_base = mmap(NULL, HW_REGS_SPAN, (PROT_READ | PROT_WRITE), MAP_SHARED, fd, HW_REGS_BASE);
-    if(virtual_base == MAP_FAILED) return 1;
-    ram_ptr  = (volatile uint32_t *)((char *)virtual_base + RAM_OFFSET);
-    ctrl_ptr = (volatile uint32_t *)((char *)virtual_base + CTRL_OFFSET);
-
-    // 2. LOAD RAW IMAGE
+    
+    // 1. Open image.hex
     hex_fp = fopen("image.hex", "r");
-    if (!hex_fp) { printf("ERR: No image.hex\n"); return 1; }
-
-    uint8_t raw_data[1024];
-    memset(raw_data, 0, 1024);
-    int count = 0;
-    while(fgets(line_buffer, sizeof(line_buffer), hex_fp) && count < 1024) {
-        int val = (int)strtol(line_buffer, NULL, 16);
-        raw_data[count] = (val > 10) ? 127 : 0; // Hard Threshold
-        count++;
+    if (hex_fp == NULL) {
+        printf("ERROR: Could not open image.hex in current folder.\n");
+        return 1;
     }
-    fclose(hex_fp);
 
-    // 3. COPY TO 2D GRID (Assuming 32x32 based on your previous run)
-    uint8_t original[32][32];
-    memset(original, 0, sizeof(original));
-    for(int i=0; i<count; i++) original[i/32][i%32] = raw_data[i];
+    // 2. Open Memory Map
+    if( ( fd = open( "/dev/mem", ( O_RDWR | O_SYNC ) ) ) == -1 ) {
+        printf("ERROR: Could not open /dev/mem\n");
+        return 1;
+    }
+    
+    virtual_base = mmap( NULL, HW_REGS_SPAN, ( PROT_READ | PROT_WRITE ), MAP_SHARED, fd, HW_REGS_BASE );
+    if( virtual_base == MAP_FAILED ) {
+        printf("ERROR: mmap failed\n");
+        close(fd);
+        return 1;
+    }
+    
+    ram_ptr = (volatile uint32_t *)( (char *)virtual_base + RAM_OFFSET );
 
-    print_ascii(original, "ORIGINAL (Input)");
+    printf("Loading image.hex to FPGA (Scaled / 2)...\n\n");
+    printf("--- IMAGE PREVIEW (32x32) ---\n");
 
-    // 4. FIND BOUNDING BOX
-    int min_r = 32, max_r = -1, min_c = 32, max_c = -1;
-    for (int r = 0; r < 32; r++) {
-        for (int c = 0; c < 32; c++) {
-            if (original[r][c] > 0) {
-                if (r < min_r) min_r = r;
-                if (r > max_r) max_r = r;
-                if (c < min_c) min_c = c;
-                if (c > max_c) max_c = c;
+    int words_written = 0;
+    char row_buffer[IMG_WIDTH + 1]; 
+    int row_idx = 0;
+
+    for (int i = 0; i < TOTAL_PIXELS / 4; i++) {
+        uint32_t packed_word = 0;
+        uint32_t p[4] = {0, 0, 0, 0};
+
+        // Read 4 pixels
+        for (int k = 0; k < 4; k++) {
+            if (fgets(line_buffer, sizeof(line_buffer), hex_fp)) {
+                // Read original hex value (e.g., 255)
+                uint32_t original_val = (uint32_t)strtol(line_buffer, NULL, 16);
+                
+                // CRITICAL FIX: Divide by 2 to fit into signed 8-bit positive range (0-127)
+                p[k] = original_val / 2;
+                
+                // Pack into the word (Little Endian)
+                packed_word |= ((p[k] & 0xFF) << (k * 8));
+
+                // Add to ASCII row buffer
+                row_buffer[row_idx++] = pixel_to_ascii(p[k]);
+                
+                if (row_idx == IMG_WIDTH) {
+                    row_buffer[IMG_WIDTH] = '\0'; 
+                    printf("%s\n", row_buffer);
+                    row_idx = 0;
+                }
             }
         }
+
+        // Write the packed word to the FPGA RAM
+        ram_ptr[i] = packed_word;
+        words_written++;
     }
 
-    if (max_r == -1) { printf("ERR: Image is blank!\n"); return 1; }
+    printf("-----------------------------\n");
+    printf("Done. Written %d packed words.\n", words_written);
 
-    // 5. CENTER IT
-    uint8_t centered[32][32];
-    memset(centered, 0, sizeof(centered));
-
-    int h = max_r - min_r + 1;
-    int w = max_c - min_c + 1;
-    int start_r = (32 - h) / 2;
-    int start_c = (32 - w) / 2;
-
-    for (int r = 0; r < h; r++) {
-        for (int c = 0; c < w; c++) {
-            centered[start_r + r][start_c + c] = original[min_r + r][min_c + c];
-        }
-    }
-
-    print_ascii(centered, "CENTERED (Will Send to FPGA)");
-    printf("Does the CENTERED image look correct? [Press Enter to Trigger]");
-    getchar();
-
-    // 6. WRITE TO FPGA
-    // Clear RAM
-    for(int i=0; i<256; i++) ram_ptr[i] = 0;
-
-    int word_idx = 0;
-    for(int r=0; r<32; r++) {
-        for(int c=0; c<32; c+=4) {
-            uint32_t pack = 0;
-            pack |= (uint32_t)centered[r][c+0] << 0;
-            pack |= (uint32_t)centered[r][c+1] << 8;
-            pack |= (uint32_t)centered[r][c+2] << 16;
-            pack |= (uint32_t)centered[r][c+3] << 24;
-            ram_ptr[word_idx++] = pack;
-        }
-    }
-
-    // 7. TRIGGER
-    *ctrl_ptr = 1;
-    usleep(100);
-    *ctrl_ptr = 0;
-    printf("Done. Check LEDs.\n");
-
+    munmap( virtual_base, HW_REGS_SPAN );
+    close( fd );
+    fclose(hex_fp);
     return 0;
 }

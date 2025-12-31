@@ -1,0 +1,7 @@
+# Create a .gitignore file that hides compilation temp files
+echo "db/" >> .gitignore
+echo "incremental_db/" >> .gitignore
+echo "greybox_tmp/" >> .gitignore
+echo "*.sof" >> .gitignore
+echo "*.rbf" >> .gitignore
+echo "*.qws" >> .gitignore

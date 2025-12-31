@@ -106,6 +106,7 @@ assign stm_hw_events = {{15{1'b0}}, SW, fpga_led_internal, fpga_debounced_button
 // ADD THESE LINES:
 wire [31:0] w_dnn_address;
 wire [31:0] w_dnn_readdata;
+wire [7:0] w_nn_result;
 
 
 //=======================================================
@@ -190,7 +191,10 @@ soc_system u0(
                .hps_0_hps_io_hps_io_gpio_inst_GPIO61(HPS_GSENSOR_INT),      //                               .hps_io_gpio_inst_GPIO61
                //FPGA Partion
                .led_pio_external_connection_export(fpga_led_internal),      //    led_pio_external_connection.export
-               .dipsw_pio_external_connection_export(SW),                   //  dipsw_pio_external_connection.export
+               // 
+                // OLD: .dipsw_pio_external_connection_export(SW),
+                // NEW: Connect the bottom 4 bits of your result (0-9 fit in 4 bits)
+                .dipsw_pio_external_connection_export(w_nn_result[3:0]),                   //  dipsw_pio_external_connection.export
                .button_pio_external_connection_export(fpga_debounced_buttons),
                                                                             // button_pio_external_connection.export
                .hps_0_h2f_reset_reset_n(hps_fpga_reset_n),                  //                hps_0_h2f_reset.reset_n
@@ -199,16 +203,14 @@ soc_system u0(
                .hps_0_f2h_stm_hw_events_stm_hwevents(stm_hw_events),        //        hps_0_f2h_stm_hw_events.stm_hwevents
                .hps_0_f2h_warm_reset_req_reset_n(~hps_warm_reset),          //       hps_0_f2h_warm_reset_req.reset_n
     
-                // --- ADD THIS BLOCK ---
-                .image_ram_out_address      (w_dnn_address),
-                .image_ram_out_clken        (1'b1),
-                .image_ram_out_chipselect   (1'b1),
-                .image_ram_out_write        (1'b0),
-                .image_ram_out_writedata    (32'b0),
-                .image_ram_out_readdata     (w_dnn_readdata),
-                .image_ram_out_byteenable   (4'b1111),
-
-                .hps_ctrl_external_connection_export(hps_ctrl_wire)
+					 // --- ADD THIS BLOCK ---
+					 .image_ram_out_address      (w_dnn_address),
+					 .image_ram_out_clken        (1'b1),
+					 .image_ram_out_chipselect   (1'b1),
+					 .image_ram_out_write        (1'b0),
+					 .image_ram_out_writedata    (32'b0),
+					 .image_ram_out_readdata     (w_dnn_readdata),
+					 .image_ram_out_byteenable   (4'b1111)
 );
 
 
@@ -287,16 +289,15 @@ fpga_top_layer1 my_dnn_accelerator (
     .clk            (FPGA_CLK1_50),      // Use the standard 50MHz clock
     .rst_n          (hps_fpga_reset_n),  // Reset controlled by HPS
     .sw             (SW[2:0]),           // Map switches 0-2
-    .led            (LED),                  // Leave unconnected (or OR with existing LEDs)
+    .led_dummy      (fpga_led_internal),
+    .led            (w_nn_result),                  // Leave unconnected (or OR with existing LEDs)
     
     // HPS Bridge Connections
     .image_addr     (w_dnn_address),     // Request this pixel
-    .qsys_readdata  (w_dnn_readdata),     // Receive this data
-    .hps_ctrl_pio   (hps_ctrl_wire)
+    .qsys_readdata  (w_dnn_readdata)     // Receive this data
 );
 
-// Optional: Override the GHRD LED logic to show your NN status instead
-// assign LED = ... (logic from your module)
 
+assign LED = w_nn_result; 
 
 endmodule

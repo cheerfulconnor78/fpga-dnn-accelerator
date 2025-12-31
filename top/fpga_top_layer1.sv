@@ -7,8 +7,7 @@ module fpga_top_layer1 (
     
     // HPS Bridge Connections
     output logic [31:0] image_addr,
-    input  logic [31:0] qsys_readdata,
-    input  logic [31:0] hps_ctrl_pio
+    input  logic [31:0] qsys_readdata
 );
 
     // 1. SETTINGS
@@ -33,80 +32,64 @@ module fpga_top_layer1 (
     logic l2_rst_ctrl;
     logic l2_weights_loaded;
     
-    // Debug Wires
+    // Debug Wires (Signed for correct comparison)
     logic [5:0] c1_valid_out;
     logic signed [5:0][7:0] c1_pixel_out;
     logic [5:0] c1_done;
 
+    // 3. THE TIMING FIX (REDUCED TO 1 CYCLE)
     // =========================================================
-    // 3. CORRECTED PIPELINE (Alignment Fixed)
-    // =========================================================
-    // PIPELINE DECLARATIONS
-    logic [31:0] qsys_readdata_reg;
-    logic [1:0] byte_select_d1, byte_select_d2; // RESTORED D2
-    logic data_valid_d1, data_valid_d2;         // RESTORED D2
-    logic signed [7:0] pixel_pipeline_reg;
-    logic valid_pipeline_reg;
-
     logic [$clog2(TOTAL_PIXELS):0] read_ptr;
     logic signed [7:0] pixel_from_bridge;
     logic data_valid_in;
 
-    // A. Address Generation (Masked)
-    assign image_addr = {20'b0, read_ptr} & 32'hFFFFFFFC; 
+    // 1. Use the read_ptr directly (Do NOT shift by 2)
+    assign image_addr = {20'b0, read_ptr[$clog2(TOTAL_PIXELS):2]};
 
-    // B. Stage 1: Latch Data & Control
+    // 2. Select the correct byte from the 32-bit bus
+    logic [1:0] byte_select;
+
+    // We need to delay the selector to match the memory read latency (usually 1 or 2 cycles)
+    // Assuming 1 cycle latency for on-chip RAM/Bridge:
     always_ff @(posedge clk) begin
-        qsys_readdata_reg <= qsys_readdata; // Data Latency 1
-        
-        byte_select_d1    <= read_ptr[1:0]; // Selector Latency 1
-        
-        if (rst) data_valid_d1 <= 0;
-        else if (read_ptr < TOTAL_PIXELS && l2_state == S_RUN_L2) 
-             data_valid_d1 <= 1;
-        else data_valid_d1 <= 0;
+        byte_select <= read_ptr[1:0]; // Store the bottom 2 bits
     end
 
-    // C. Stage 2: Alignment Correction
-    // We delay the selector/valid signals by ONE MORE cycle to match
-    // the memory read latency (which puts data into qsys_readdata_reg).
-    always_ff @(posedge clk) begin
-        byte_select_d2 <= byte_select_d1;
-        data_valid_d2  <= data_valid_d1;
-    end
-
-    // D. MUX: Select Byte using D2 (Perfectly Aligned)
+    // 3. MUX: Pick the byte based on the offset
     always_comb begin
-        case (byte_select_d2) 
-            2'b00: pixel_from_bridge = qsys_readdata_reg[7:0];   
-            2'b01: pixel_from_bridge = qsys_readdata_reg[15:8];  
-            2'b10: pixel_from_bridge = qsys_readdata_reg[23:16]; 
-            2'b11: pixel_from_bridge = qsys_readdata_reg[31:24]; 
+        case (byte_select)
+            2'b00: pixel_from_bridge = qsys_readdata[7:0];   // Bytes 0, 4, 8...
+            2'b01: pixel_from_bridge = qsys_readdata[15:8];  // Bytes 1, 5, 9...
+            2'b10: pixel_from_bridge = qsys_readdata[23:16]; // Bytes 2, 6, 10...
+            2'b11: pixel_from_bridge = qsys_readdata[31:24]; // Bytes 3, 7, 11...
         endcase
     end
-    
-    // E. Stage 3: Output Register (Fixes Hold Violation)
+
+    // Use 'pixel_from_bridge' as your input to the Neural Net
+
+    // C. Fix Timing: EXACT 1-Cycle Delay (Standard RAM Latency)
+    // Cycle 0: read_ptr updates -> Address changes on bus.
+    // Cycle 1: Memory returns Data. 'data_valid_in' becomes 1. MATCH.
     always_ff @(posedge clk) begin
         if (rst) begin
-            valid_pipeline_reg <= 0;
-            pixel_pipeline_reg <= 0;
+            data_valid_in <= 0;
         end else begin
-            pixel_pipeline_reg <= pixel_from_bridge;
-            valid_pipeline_reg <= data_valid_d2; // Use D2
+            // Simply check if we are reading. The register itself acts as the 1-cycle delay.
+            if (read_ptr < TOTAL_PIXELS && l2_state == S_RUN_L2) 
+                data_valid_in <= 1;
+            else 
+                data_valid_in <= 0;
         end
     end
-
-    assign data_valid_in = valid_pipeline_reg;
-
     // =========================================================
+
     // 4. DUT INSTANTIATION
-    // =========================================================
     lenet_top_parallel DUT (
         .clk(clk), 
         .rst(rst || l2_rst_ctrl), 
         .start(start),
         .data_valid_in(data_valid_in),     
-        .pixel_in(pixel_pipeline_reg),      
+        .pixel_in(pixel_from_bridge),      
         .data_valid_out(c1_valid_out), 
         .pixel_out(c1_pixel_out),
         .layer_done(c1_done)
@@ -141,18 +124,18 @@ module fpga_top_layer1 (
     logic c5_done, f6_done, out_done;
 
     fc_streaming #(.NUM_INPUTS(400), .NUM_OUTPUTS(120), .WEIGHT_FILE("/home/bany/personal/fpga-dnn-accelerator/top/weights_generator/fc_weights/c5_weights_flattened.hex"), .SHIFT(10)) c5_DUT (
-        .clk(clk), .rst(rst || l2_rst_ctrl), .data_in(c5_input_pixel), .data_valid_in(c5_input_valid), .data_out(c5_out_pixel), .data_valid_out(c5_out_valid), .done(c5_done));
+        .clk(clk), .rst(rst), .data_in(c5_input_pixel), .data_valid_in(c5_input_valid), .data_out(c5_out_pixel), .data_valid_out(c5_out_valid), .done(c5_done));
 
     fc_streaming #(.NUM_INPUTS(120), .NUM_OUTPUTS(84), .WEIGHT_FILE("/home/bany/personal/fpga-dnn-accelerator/top/weights_generator/fc_weights/f6_weights_flattened.hex"), .SHIFT(7)) f6_DUT (
-        .clk(clk), .rst(rst || l2_rst_ctrl), .data_in(c5_out_pixel), .data_valid_in(c5_out_valid), .data_out(f6_out_pixel), .data_valid_out(f6_out_valid), .done(f6_done));
+        .clk(clk), .rst(rst), .data_in(c5_out_pixel), .data_valid_in(c5_out_valid), .data_out(f6_out_pixel), .data_valid_out(f6_out_valid), .done(f6_done));
 
     fc_streaming #(.NUM_INPUTS(84), .NUM_OUTPUTS(10), .WEIGHT_FILE("/home/bany/personal/fpga-dnn-accelerator/top/weights_generator/fc_weights/out_weights_flattened.hex"), .ENABLE_RELU(0), .SHIFT(7)) out_DUT (
-        .clk(clk), .rst(rst || l2_rst_ctrl), .data_in(f6_out_pixel), .data_valid_in(f6_out_valid), .data_out(out_out_pixel), .data_valid_out(out_out_valid), .done(out_done));
+        .clk(clk), .rst(rst), .data_in(f6_out_pixel), .data_valid_in(f6_out_valid), .data_out(out_out_pixel), .data_valid_out(out_out_valid), .done(out_done));
 
     // PREDICTION LOGIC
     logic [3:0] predicted_digit;
     logic prediction_ready;
-    output_max u_argmax (.clk(clk), .rst(rst || l2_rst_ctrl), .data_in(out_out_pixel), .data_valid_in(out_out_valid), .layer_done_in(out_done), .prediction(predicted_digit), .prediction_valid(prediction_ready));
+    output_max u_argmax (.clk(clk), .rst(rst), .data_in(out_out_pixel), .data_valid_in(out_out_valid), .layer_done_in(out_done), .prediction(predicted_digit), .prediction_valid(prediction_ready));
 
     // ============================================================
     // CONTROL LOGIC
@@ -171,13 +154,11 @@ module fpga_top_layer1 (
         end else begin
             case (l2_state)
                 S_IDLE: begin
-                if (hps_ctrl_pio[0] == 1'b1) begin
+                    if (led_dummy[0] == 1) begin
                         l2_state <= S_RESET_L2;
                         loop_iter <= 0;
-                        startup_timer <= 0;
                     end
                 end
-
                 S_RESET_L2: begin
                     l2_rst_ctrl <= 1;
                     current_pixel_count <= 0; 
@@ -203,15 +184,19 @@ module fpga_top_layer1 (
                     l2_start <= 0;
                     start <= 0;
                     
+                    // --- A. FEED THE IMAGE ---
                     if (read_ptr < TOTAL_PIXELS) begin
                         read_ptr <= read_ptr + 1;
                     end
+                    // valid signal is handled in the "Timing Fix" block above
                     
+                    // --- B. CAPTURE L2 OUTPUT ---
                     if (l2_valid_out) begin
                         s4_ram[ (loop_iter * 25) + current_pixel_count ] <= l2_pixel_out;
                         current_pixel_count <= current_pixel_count + 1;
                     end
 
+                    // --- C. CHECK COMPLETION ---
                     if (l2_done_sig) l2_state <= S_NEXT;
                 end
 
@@ -236,7 +221,9 @@ module fpga_top_layer1 (
 
                 S_BRIDGE_FINISH: begin
                     c5_input_valid <= 0;
-                    l2_state <= S_IDLE;
+                    if (led_dummy[0] == 0) begin
+                        l2_state <= S_IDLE;
+                    end
                 end
             endcase
         end
@@ -271,7 +258,7 @@ module fpga_top_layer1 (
             if (f6_out_valid    && f6_out_pixel             > peak_f6_val) peak_f6_val <= f6_out_pixel;
         end
 
-        if (rst || start) begin
+        if (rst) begin
             winning_score <= -128; stream_index <= 0;
         end else if (out_out_valid) begin
             if (out_out_pixel > winning_score) begin

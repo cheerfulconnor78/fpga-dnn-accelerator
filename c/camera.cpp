@@ -12,12 +12,11 @@
 #define HW_REGS_BASE (0xFF200000)
 #define HW_REGS_SPAN (0x00200000)
 #define RAM_OFFSET   (0x00040000)
-#define CTRL_OFFSET  (0x00050000)
-#define LED_OFFSET   (0x00003000) 
+#define SW_OFFSET    (0x00004000) // Read Result (Switches)
+#define LED_OFFSET   (0x00003000) // Write Start Trigger (LEDs)
 
-// --- TUNING PARAMETERS ---
+// --- TUNING PARAMETERS (Fixed) ---
 int thresh_val = 85;    
-int thickness = 8;      
 int glue_amount = 4;    
 int exposure_val = 280; 
 
@@ -49,35 +48,31 @@ int main() {
     if (virtual_base == MAP_FAILED) { std::cerr << "ERR: mmap\n"; exit(-1); }
     
     volatile uint32_t * ram_ptr  = (volatile uint32_t*)((char *)virtual_base + RAM_OFFSET);
-    volatile uint32_t * ctrl_ptr = (volatile uint32_t*)((char *)virtual_base + CTRL_OFFSET);
-    volatile uint32_t * led_ptr  = (volatile uint32_t*)((char *)virtual_base + LED_OFFSET);
+    volatile uint32_t * sw_ptr   = (volatile uint32_t*)((char *)virtual_base + SW_OFFSET);
+    volatile uint32_t * led_ptr  = (volatile uint32_t*)((char *)virtual_base + LED_OFFSET); 
 
     cv::VideoCapture cap(0);
     if (!cap.isOpened()) { std::cerr << "ERR: Camera\n"; exit(-1); }
     
     cap.set(cv::CAP_PROP_FRAME_WIDTH, 640);
     cap.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
-
     set_exposure(exposure_val);
 
+    // Removed Trackbars, just creating the window
     cv::namedWindow("Live Inference", cv::WINDOW_AUTOSIZE);
-    cv::createTrackbar("Threshold", "Live Inference", &thresh_val, 255); 
-    cv::createTrackbar("Ink Glue", "Live Inference", &glue_amount, 10); 
-    cv::createTrackbar("Thickness", "Live Inference", &thickness, 20);
 
     cv::Mat frame, crop, gray, blurred, binary, canvas, final_digit;
-    cv::Mat dashboard(480, 640, CV_8UC1); 
+    cv::Mat dashboard(480, 640, CV_8UC3); 
     
     cv::Rect target_box(220, 140, 200, 200);
 
-    std::cout << "Running V9 (Fixed) - Live Feedback...\n";
+    std::cout << "Running V12 (No Sliders) - Camera Ready...\n";
 
     while (true) {
         cap >> frame;
         if (frame.empty()) exit(0);
 
         crop = frame(target_box).clone(); 
-
         cv::cvtColor(crop, gray, cv::COLOR_BGR2GRAY);
         cv::GaussianBlur(gray, blurred, cv::Size(5, 5), 0);
         cv::threshold(blurred, binary, thresh_val, 255, cv::THRESH_BINARY_INV);
@@ -91,75 +86,34 @@ int main() {
         canvas = cv::Mat::zeros(binary.size(), CV_8UC1);
         double maxArea = 0;
         int maxIdx = -1;
-
         if (!contours.empty()) {
             for (size_t i = 0; i < contours.size(); i++) {
                 double area = cv::contourArea(contours[i]);
                 if (area > maxArea) { maxArea = area; maxIdx = i; }
             }
         }
-
         if (maxIdx >= 0 && maxArea > 50) { 
-            cv::drawContours(canvas, contours, maxIdx, cv::Scalar(255), thickness); 
+            cv::drawContours(canvas, contours, maxIdx, cv::Scalar(255), 8); 
         }
 
         std::vector<std::vector<cv::Point> > clean_contours;
         cv::findContours(canvas.clone(), clean_contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
         final_digit = cv::Mat::zeros(28, 28, CV_8UC1);
-        
         if (!clean_contours.empty()) {
              cv::Rect boundRect = cv::boundingRect(clean_contours[0]);
              cv::Mat digit_roi = canvas(boundRect);
-
              float scale = 20.0f / std::max(boundRect.width, boundRect.height);
              int newWidth = std::max(1, (int)(boundRect.width * scale));
              int newHeight = std::max(1, (int)(boundRect.height * scale));
-
              cv::Mat resizedROI;
              cv::resize(digit_roi, resizedROI, cv::Size(newWidth, newHeight), 0, 0, cv::INTER_AREA);
-
              int dx = (28 - newWidth) / 2;
              int dy = (28 - newHeight) / 2;
              resizedROI.copyTo(final_digit(cv::Rect(dx, dy, newWidth, newHeight)));
-             
              final_digit = shift_to_center_of_mass(final_digit);
         }
-        
         cv::threshold(final_digit, final_digit, 127, 255, cv::THRESH_BINARY);
-
-        // --- READ FPGA RESULT ---
-        uint32_t led_state = *led_ptr; 
-        int prediction = led_state & 0x0F; 
-
-        // --- DASHBOARD ---
-        cv::rectangle(frame, target_box, cv::Scalar(0, 255, 0), 2);
-        
-        // --- COMPILER FIX: Use sprintf instead of to_string ---
-        char pred_str[50];
-        sprintf(pred_str, "FPGA Says: %d", prediction);
-        cv::putText(frame, pred_str, cv::Point(20, 50), cv::FONT_HERSHEY_SIMPLEX, 1.2, cv::Scalar(0, 255, 0), 3);
-
-        cv::Mat tl; cv::resize(frame, tl, cv::Size(320, 240));
-        cv::cvtColor(tl, tl, cv::COLOR_BGR2GRAY); 
-        tl.copyTo(dashboard(cv::Rect(0, 0, 320, 240)));
-
-        cv::Mat tr; cv::resize(binary, tr, cv::Size(320, 240), 0, 0, cv::INTER_NEAREST); 
-        tr.copyTo(dashboard(cv::Rect(320, 0, 320, 240)));
-
-        cv::Mat bl; cv::resize(canvas, bl, cv::Size(320, 240));
-        bl.copyTo(dashboard(cv::Rect(0, 240, 320, 240)));
-
-        cv::Mat br; cv::resize(final_digit, br, cv::Size(320, 240), 0, 0, cv::INTER_NEAREST);
-        br.copyTo(dashboard(cv::Rect(320, 240, 320, 240)));
-        
-        cv::putText(dashboard, "1. INPUT & RESULT", cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(255), 2);
-        cv::putText(dashboard, "2. Glue View", cv::Point(330, 30), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(127), 2);
-        cv::putText(dashboard, "3. Clean Digit", cv::Point(10, 270), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(255), 2);
-        cv::putText(dashboard, "4. FPGA Input", cv::Point(330, 270), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(255), 2);
-
-        cv::imshow("Live Inference", dashboard);
-        if (cv::waitKey(1) == 27) exit(0);
 
         // --- FPGA WRITE ---
         cv::Mat padded_image;
@@ -176,7 +130,43 @@ int main() {
             ram_ptr[i] = packed_word;
         }
         
-        *ctrl_ptr = 1; usleep(100); *ctrl_ptr = 0;
+        // --- TRIGGER START ---
+        *led_ptr = 1;  
+        usleep(100);   
+        *led_ptr = 0; 
+
+        // --- READ RESULT ---
+        uint32_t sw_state = *sw_ptr; 
+        int prediction = sw_state & 0x0F; 
+
+        // --- DASHBOARD ---
+        cv::Mat tl; cv::resize(frame, tl, cv::Size(320, 240));
+        
+        cv::Mat tr; cv::resize(binary, tr, cv::Size(320, 240), 0, 0, cv::INTER_NEAREST); 
+        cv::cvtColor(tr, tr, cv::COLOR_GRAY2BGR);
+        
+        cv::Mat bl; cv::resize(canvas, bl, cv::Size(320, 240));
+        cv::cvtColor(bl, bl, cv::COLOR_GRAY2BGR);
+
+        cv::Mat br; cv::resize(final_digit, br, cv::Size(320, 240), 0, 0, cv::INTER_NEAREST);
+        cv::cvtColor(br, br, cv::COLOR_GRAY2BGR);
+
+        tl.copyTo(dashboard(cv::Rect(0, 0, 320, 240)));
+        tr.copyTo(dashboard(cv::Rect(320, 0, 320, 240)));
+        bl.copyTo(dashboard(cv::Rect(0, 240, 320, 240)));
+        br.copyTo(dashboard(cv::Rect(320, 240, 320, 240)));
+        
+        cv::rectangle(dashboard, cv::Rect(0, 0, 640, 60), cv::Scalar(0, 0, 0), -1); 
+        
+        char pred_str[50];
+        sprintf(pred_str, "FPGA Prediction: %d", prediction);
+        
+        cv::putText(dashboard, pred_str, cv::Point(20, 45), cv::FONT_HERSHEY_SIMPLEX, 1.5, cv::Scalar(0, 255, 0), 3);
+        cv::rectangle(dashboard, cv::Rect(220/2, 140/2, 200/2, 200/2), cv::Scalar(0, 255, 0), 2);
+
+        cv::imshow("Live Inference", dashboard);
+        if (cv::waitKey(1) == 27) exit(0);
+
         usleep(10000); 
     }
     return 0;

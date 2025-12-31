@@ -26,8 +26,6 @@ Progress: Adding mm_bridge_0 [altera_avalon_mm_bridge 24.1]
 Progress: Parameterizing module mm_bridge_0
 Progress: Adding onchip_memory2_0 [altera_avalon_onchip_memory2 24.1]
 Progress: Parameterizing module onchip_memory2_0
-Progress: Adding pio_0 [altera_avalon_pio 24.1]
-Progress: Parameterizing module pio_0
 Progress: Adding sysid_qsys [altera_avalon_sysid_qsys 24.1]
 Progress: Parameterizing module sysid_qsys
 Progress: Building connections
@@ -73,8 +71,6 @@ Progress: Adding mm_bridge_0 [altera_avalon_mm_bridge 24.1]
 Progress: Parameterizing module mm_bridge_0
 Progress: Adding onchip_memory2_0 [altera_avalon_onchip_memory2 24.1]
 Progress: Parameterizing module onchip_memory2_0
-Progress: Adding pio_0 [altera_avalon_pio 24.1]
-Progress: Parameterizing module pio_0
 Progress: Adding sysid_qsys [altera_avalon_sysid_qsys 24.1]
 Progress: Parameterizing module sysid_qsys
 Progress: Building connections
@@ -101,7 +97,7 @@ Warning: hps_0.f2h_irq1: Cannot connect clock for irq_mapper_002.sender
 Warning: hps_0.f2h_irq1: Cannot connect reset for irq_mapper_002.sender
 Info: ILC: "soc_system" instantiated interrupt_latency_counter "ILC"
 Info: button_pio: Starting RTL generation for module 'soc_system_button_pio'
-Info: button_pio:   Generation command is [exec /opt/intelFPGA/24.1/quartus/linux64/perl/bin/perl -I /opt/intelFPGA/24.1/quartus/linux64/perl/lib -I /opt/intelFPGA/24.1/quartus/sopc_builder/bin/europa -I /opt/intelFPGA/24.1/quartus/sopc_builder/bin -I /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/common -I /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio -- /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio/generate_rtl.pl --name=soc_system_button_pio --dir=/tmp/alt0451_460177690655199716.dir/0003_button_pio_gen/ --quartus_dir=/opt/intelFPGA/24.1/quartus --verilog --config=/tmp/alt0451_460177690655199716.dir/0003_button_pio_gen//soc_system_button_pio_component_configuration.pl  --do_build_sim=0  ]
+Info: button_pio:   Generation command is [exec /opt/intelFPGA/24.1/quartus/linux64/perl/bin/perl -I /opt/intelFPGA/24.1/quartus/linux64/perl/lib -I /opt/intelFPGA/24.1/quartus/sopc_builder/bin/europa -I /opt/intelFPGA/24.1/quartus/sopc_builder/bin -I /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/common -I /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio -- /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio/generate_rtl.pl --name=soc_system_button_pio --dir=/tmp/alt0451_8424427281701993599.dir/0003_button_pio_gen/ --quartus_dir=/opt/intelFPGA/24.1/quartus --verilog --config=/tmp/alt0451_8424427281701993599.dir/0003_button_pio_gen//soc_system_button_pio_component_configuration.pl  --do_build_sim=0  ]
 Info: button_pio: perl: warning: Setting locale failed.
 Info: button_pio: perl: warning: Please check that your locale settings:
 Info: button_pio: 	LANGUAGE = (unset),
@@ -113,7 +109,7 @@ Info: button_pio: perl: warning: Falling back to the standard locale ("C").
 Info: button_pio: Done RTL generation for module 'soc_system_button_pio'
 Info: button_pio: "soc_system" instantiated altera_avalon_pio "button_pio"
 Info: dipsw_pio: Starting RTL generation for module 'soc_system_dipsw_pio'
-Info: dipsw_pio:   Generation command is [exec /opt/intelFPGA/24.1/quartus/linux64/perl/bin/perl -I /opt/intelFPGA/24.1/quartus/linux64/perl/lib -I /opt/intelFPGA/24.1/quartus/sopc_builder/bin/europa -I /opt/intelFPGA/24.1/quartus/sopc_builder/bin -I /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/common -I /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio -- /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio/generate_rtl.pl --name=soc_system_dipsw_pio --dir=/tmp/alt0451_460177690655199716.dir/0004_dipsw_pio_gen/ --quartus_dir=/opt/intelFPGA/24.1/quartus --verilog --config=/tmp/alt0451_460177690655199716.dir/0004_dipsw_pio_gen//soc_system_dipsw_pio_component_configuration.pl  --do_build_sim=0  ]
+Info: dipsw_pio:   Generation command is [exec /opt/intelFPGA/24.1/quartus/linux64/perl/bin/perl -I /opt/intelFPGA/24.1/quartus/linux64/perl/lib -I /opt/intelFPGA/24.1/quartus/sopc_builder/bin/europa -I /opt/intelFPGA/24.1/quartus/sopc_builder/bin -I /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/common -I /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio -- /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio/generate_rtl.pl --name=soc_system_dipsw_pio --dir=/tmp/alt0451_8424427281701993599.dir/0004_dipsw_pio_gen/ --quartus_dir=/opt/intelFPGA/24.1/quartus --verilog --config=/tmp/alt0451_8424427281701993599.dir/0004_dipsw_pio_gen//soc_system_dipsw_pio_component_configuration.pl  --do_build_sim=0  ]
 Info: dipsw_pio: perl: warning: Setting locale failed.
 Info: dipsw_pio: perl: warning: Please check that your locale settings:
 Info: dipsw_pio: 	LANGUAGE = (unset),
@@ -132,7 +128,7 @@ Warning: hps_0: HPS model no longer supports simulation for HPS FPGA Bridges.
 Info: hps_0: "soc_system" instantiated altera_hps "hps_0"
 Info: jtag_uart: "soc_system" instantiated altera_avalon_jtag_uart "jtag_uart"
 Info: led_pio: Starting RTL generation for module 'soc_system_led_pio'
-Info: led_pio:   Generation command is [exec /opt/intelFPGA/24.1/quartus/linux64/perl/bin/perl -I /opt/intelFPGA/24.1/quartus/linux64/perl/lib -I /opt/intelFPGA/24.1/quartus/sopc_builder/bin/europa -I /opt/intelFPGA/24.1/quartus/sopc_builder/bin -I /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/common -I /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio -- /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio/generate_rtl.pl --name=soc_system_led_pio --dir=/tmp/alt0451_460177690655199716.dir/0006_led_pio_gen/ --quartus_dir=/opt/intelFPGA/24.1/quartus --verilog --config=/tmp/alt0451_460177690655199716.dir/0006_led_pio_gen//soc_system_led_pio_component_configuration.pl  --do_build_sim=0  ]
+Info: led_pio:   Generation command is [exec /opt/intelFPGA/24.1/quartus/linux64/perl/bin/perl -I /opt/intelFPGA/24.1/quartus/linux64/perl/lib -I /opt/intelFPGA/24.1/quartus/sopc_builder/bin/europa -I /opt/intelFPGA/24.1/quartus/sopc_builder/bin -I /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/common -I /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio -- /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio/generate_rtl.pl --name=soc_system_led_pio --dir=/tmp/alt0451_8424427281701993599.dir/0006_led_pio_gen/ --quartus_dir=/opt/intelFPGA/24.1/quartus --verilog --config=/tmp/alt0451_8424427281701993599.dir/0006_led_pio_gen//soc_system_led_pio_component_configuration.pl  --do_build_sim=0  ]
 Info: led_pio: perl: warning: Setting locale failed.
 Info: led_pio: perl: warning: Please check that your locale settings:
 Info: led_pio: 	LANGUAGE = (unset),
@@ -145,7 +141,7 @@ Info: led_pio: Done RTL generation for module 'soc_system_led_pio'
 Info: led_pio: "soc_system" instantiated altera_avalon_pio "led_pio"
 Info: mm_bridge_0: "soc_system" instantiated altera_avalon_mm_bridge "mm_bridge_0"
 Info: onchip_memory2_0: Starting RTL generation for module 'soc_system_onchip_memory2_0'
-Info: onchip_memory2_0:   Generation command is [exec /opt/intelFPGA/24.1/quartus/linux64/perl/bin/perl -I /opt/intelFPGA/24.1/quartus/linux64/perl/lib -I /opt/intelFPGA/24.1/quartus/sopc_builder/bin/europa -I /opt/intelFPGA/24.1/quartus/sopc_builder/bin -I /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/common -I /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_onchip_memory2 -- /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_onchip_memory2/generate_rtl.pl --name=soc_system_onchip_memory2_0 --dir=/tmp/alt0451_460177690655199716.dir/0008_onchip_memory2_0_gen/ --quartus_dir=/opt/intelFPGA/24.1/quartus --verilog --config=/tmp/alt0451_460177690655199716.dir/0008_onchip_memory2_0_gen//soc_system_onchip_memory2_0_component_configuration.pl  --do_build_sim=0  ]
+Info: onchip_memory2_0:   Generation command is [exec /opt/intelFPGA/24.1/quartus/linux64/perl/bin/perl -I /opt/intelFPGA/24.1/quartus/linux64/perl/lib -I /opt/intelFPGA/24.1/quartus/sopc_builder/bin/europa -I /opt/intelFPGA/24.1/quartus/sopc_builder/bin -I /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/common -I /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_onchip_memory2 -- /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_onchip_memory2/generate_rtl.pl --name=soc_system_onchip_memory2_0 --dir=/tmp/alt0451_8424427281701993599.dir/0008_onchip_memory2_0_gen/ --quartus_dir=/opt/intelFPGA/24.1/quartus --verilog --config=/tmp/alt0451_8424427281701993599.dir/0008_onchip_memory2_0_gen//soc_system_onchip_memory2_0_component_configuration.pl  --do_build_sim=0  ]
 Info: onchip_memory2_0: perl: warning: Setting locale failed.
 Info: onchip_memory2_0: perl: warning: Please check that your locale settings:
 Info: onchip_memory2_0: 	LANGUAGE = (unset),
@@ -156,22 +152,9 @@ Info: onchip_memory2_0:     are supported and installed on your system.
 Info: onchip_memory2_0: perl: warning: Falling back to the standard locale ("C").
 Info: onchip_memory2_0: Done RTL generation for module 'soc_system_onchip_memory2_0'
 Info: onchip_memory2_0: "soc_system" instantiated altera_avalon_onchip_memory2 "onchip_memory2_0"
-Info: pio_0: Starting RTL generation for module 'soc_system_pio_0'
-Info: pio_0:   Generation command is [exec /opt/intelFPGA/24.1/quartus/linux64/perl/bin/perl -I /opt/intelFPGA/24.1/quartus/linux64/perl/lib -I /opt/intelFPGA/24.1/quartus/sopc_builder/bin/europa -I /opt/intelFPGA/24.1/quartus/sopc_builder/bin -I /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/common -I /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio -- /opt/intelFPGA/24.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio/generate_rtl.pl --name=soc_system_pio_0 --dir=/tmp/alt0451_460177690655199716.dir/0009_pio_0_gen/ --quartus_dir=/opt/intelFPGA/24.1/quartus --verilog --config=/tmp/alt0451_460177690655199716.dir/0009_pio_0_gen//soc_system_pio_0_component_configuration.pl  --do_build_sim=0  ]
-Info: pio_0: perl: warning: Setting locale failed.
-Info: pio_0: perl: warning: Please check that your locale settings:
-Info: pio_0: 	LANGUAGE = (unset),
-Info: pio_0: 	LC_ALL = (unset),
-Info: pio_0: 	LC_CTYPE = "en_US.UTF-8",
-Info: pio_0: 	LANG = "C"
-Info: pio_0:     are supported and installed on your system.
-Info: pio_0: perl: warning: Falling back to the standard locale ("C").
-Info: pio_0: Done RTL generation for module 'soc_system_pio_0'
-Info: pio_0: "soc_system" instantiated altera_avalon_pio "pio_0"
 Info: sysid_qsys: "soc_system" instantiated altera_avalon_sysid_qsys "sysid_qsys"
 Info: avalon_st_adapter: Inserting error_adapter: error_adapter_0
 Info: avalon_st_adapter_001: Inserting error_adapter: error_adapter_0
-Info: avalon_st_adapter_002: Inserting error_adapter: error_adapter_0
 Info: mm_interconnect_0: "soc_system" instantiated altera_mm_interconnect "mm_interconnect_0"
 Info: avalon_st_adapter: Inserting error_adapter: error_adapter_0
 Info: avalon_st_adapter_001: Inserting error_adapter: error_adapter_0
@@ -251,6 +234,6 @@ Info: avalon_st_adapter: "mm_interconnect_3" instantiated altera_avalon_st_adapt
 Info: border: "hps_io" instantiated altera_interface_generator "border"
 Info: error_adapter_0: "avalon_st_adapter" instantiated error_adapter "error_adapter_0"
 Info: error_adapter_0: "avalon_st_adapter" instantiated error_adapter "error_adapter_0"
-Info: soc_system: Done "soc_system" with 67 modules, 141 files
+Info: soc_system: Done "soc_system" with 66 modules, 140 files
 Info: qsys-generate succeeded.
 Info: Finished: Create HDL design files for synthesis

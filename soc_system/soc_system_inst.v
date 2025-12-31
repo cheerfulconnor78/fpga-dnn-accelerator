@@ -55,7 +55,6 @@
 		.hps_0_hps_io_hps_io_gpio_inst_GPIO53  (<connected-to-hps_0_hps_io_hps_io_gpio_inst_GPIO53>),  //                               .hps_io_gpio_inst_GPIO53
 		.hps_0_hps_io_hps_io_gpio_inst_GPIO54  (<connected-to-hps_0_hps_io_hps_io_gpio_inst_GPIO54>),  //                               .hps_io_gpio_inst_GPIO54
 		.hps_0_hps_io_hps_io_gpio_inst_GPIO61  (<connected-to-hps_0_hps_io_hps_io_gpio_inst_GPIO61>),  //                               .hps_io_gpio_inst_GPIO61
-		.hps_ctrl_external_connection_export   (<connected-to-hps_ctrl_external_connection_export>),   //   hps_ctrl_external_connection.export
 		.image_ram_out_address                 (<connected-to-image_ram_out_address>),                 //                  image_ram_out.address
 		.image_ram_out_chipselect              (<connected-to-image_ram_out_chipselect>),              //                               .chipselect
 		.image_ram_out_clken                   (<connected-to-image_ram_out_clken>),                   //                               .clken

@@ -56,7 +56,6 @@
 			hps_0_hps_io_hps_io_gpio_inst_GPIO53  : inout std_logic                     := 'X';             -- hps_io_gpio_inst_GPIO53
 			hps_0_hps_io_hps_io_gpio_inst_GPIO54  : inout std_logic                     := 'X';             -- hps_io_gpio_inst_GPIO54
 			hps_0_hps_io_hps_io_gpio_inst_GPIO61  : inout std_logic                     := 'X';             -- hps_io_gpio_inst_GPIO61
-			hps_ctrl_external_connection_export   : out   std_logic_vector(31 downto 0);                    -- export
 			image_ram_out_address                 : in    std_logic_vector(9 downto 0)  := (others => 'X'); -- address
 			image_ram_out_chipselect              : in    std_logic                     := 'X';             -- chipselect
 			image_ram_out_clken                   : in    std_logic                     := 'X';             -- clken
@@ -143,7 +142,6 @@
 			hps_0_hps_io_hps_io_gpio_inst_GPIO53  => CONNECTED_TO_hps_0_hps_io_hps_io_gpio_inst_GPIO53,  --                               .hps_io_gpio_inst_GPIO53
 			hps_0_hps_io_hps_io_gpio_inst_GPIO54  => CONNECTED_TO_hps_0_hps_io_hps_io_gpio_inst_GPIO54,  --                               .hps_io_gpio_inst_GPIO54
 			hps_0_hps_io_hps_io_gpio_inst_GPIO61  => CONNECTED_TO_hps_0_hps_io_hps_io_gpio_inst_GPIO61,  --                               .hps_io_gpio_inst_GPIO61
-			hps_ctrl_external_connection_export   => CONNECTED_TO_hps_ctrl_external_connection_export,   --   hps_ctrl_external_connection.export
 			image_ram_out_address                 => CONNECTED_TO_image_ram_out_address,                 --                  image_ram_out.address
 			image_ram_out_chipselect              => CONNECTED_TO_image_ram_out_chipselect,              --                               .chipselect
 			image_ram_out_clken                   => CONNECTED_TO_image_ram_out_clken,                   --                               .clken
